@@ -1,0 +1,27 @@
+Status,Valor
+1.01 - Aguardando Individualização de Matrícula,1
+1.02 - Imóvel Pronto,2
+1.03 - Aguardando Individualização de Matrícula,3
+1.04 - Apto para Outorga de Escritura Definitiva,4
+1.04.2 - Comunicado por E-mail1,5
+1.04.3 - Comunicado por E-mail2,6
+1.04.4 - Criar notificação Extra Judicial,7
+1.04.5 - Notificado Extrajudicialmente,8
+1.05 - Em Análise de Documentos,9
+1.06 - Minuta Aprovada,10
+1.07 - Assinatura Gafisa Agendada,11
+1.08 - Escritura Definitiva Lavrada,12
+1.09 - Escritura Definitiva Registrada,13
+2.01 - Iniciar Outorga,14
+2.02 - Iniciar Outorga – Contato via E-mail,15
+2.03 - Reverter Fluxo de AF,16
+2.04 - PF Enviada,17
+2.05 - Em Análise de Documentos,18
+2.06 - Minuta Aprovada,19
+2.07 - Assinatura Gafisa Agendada,20
+2.08 - Escritura de Alienação Fiduciária Lavrada,21
+2.09 - Escritura de Alienação Fiduciária Registrada,22
+2.10 - Declaração de Baixa de Alienação,23
+2.11 - Declaração de Baixa de Alienação Enviada,24
+Unidade Distratada,25
+Escritura transferida,26

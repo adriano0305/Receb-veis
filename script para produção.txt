@@ -1,0 +1,23 @@
+SCRIPT PARA ATUALIZAR PRODUÇÃO
+-> EVENTO DE USUÁRIO
+RSC Fatura Geral UE
+RSC Lancamento UE
+
+-> CLIENTE
+RSC Tabela Efetivação CT
+rsc_reparcelamento_2_ct
+
+-> PROGRAMADO
+GAR Rec JE AR
+
+-> SUITELET
+RSC Fatura Reparcelamento ST
+RSC Fatura Novas Parcelas 2 ST
+GAF Rec Atualizar Parcela AR
+RSC Tabela Efetivação ST
+
+-> MAP REDUCE
+RSC Fatura Reparcelamento 2 MR
+
+
+

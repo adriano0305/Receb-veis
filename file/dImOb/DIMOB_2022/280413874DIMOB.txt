@@ -1,0 +1,5 @@
+DIMOB                                                                                                                                                                                                                                                                                                                                                                                 
+R01cnpj          20210000000000000000000000cnpj                                                        cnpj       undefined                                                                                           cn0000                              
+R03
+R04
+T9                                                                                                    

@@ -1,0 +1,15 @@
+Controle de Escrituração Definitiva: https://5843489-sb2.app.netsuite.com/app/common/custom/custrecordentry.nl?id=139&rectype=272&whence=
+Página 8 -> "Escritura encerrada”: 
+Dúvida: apenas na ultima tabela de andamento de status ou em todas?
+
+Controle de Escrituração de Alienação: https://5843489-sb2.app.netsuite.com/app/common/custom/custrecordentry.nl?id=556&rectype=272&whence=
+Página 10 -> Escritura de Alienação Fiduciária Registrada 
+Dúvida: apenas uma fatura paga ou todas as faturas pagas?
+
+Fazer outro teste com escritura de alienação nos status:
+-> Iniciar Outorga – Contato Telefônico: https://5843489-sb2.app.netsuite.com/app/common/custom/custrecordentry.nl?id=557&rectype=272&whence=
+-> Reverter Fluxo de AF
+
+
+DISTRATO: https://5843489-sb2.app.netsuite.com/app/common/custom/custrecordentry.nl?rectype=272&id=1261
+MUDANÇA DE CLIENTE: 
