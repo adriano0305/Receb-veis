@@ -1247,7 +1247,7 @@ const afterSubmit = (context) => {
                         columns: ['companyname','custentity_rsc_securitizado','custentity_rsc_d_amortizacao_divida','custentity_rsc_c_amortizacao_divida']
                     });
 
-                    if (lookupProjeto.custentity_rsc_securitizado == true && (lookupProjeto.custentity_rsc_d_amortizacao_divida && lookupProjeto.custentity_rsc_c_amortizacao_divida)) {
+                    if (lookupProjeto.custentity_rsc_securitizado && (lookupProjeto.custentity_rsc_d_amortizacao_divida && lookupProjeto.custentity_rsc_c_amortizacao_divida)) {
                         // Contas de amortização nas preferências gerais + contas de amortização no cadastro do projeto
                         arrayLancamentos.push({
                             acao: 'create',
@@ -2055,145 +2055,177 @@ const afterSubmit = (context) => {
                             });
                             log.audit('lkpProjeto', lkpProjeto); 
 
-                            if (lkpProjeto.custentity_rsc_securitizado == true) {
-                                arrayLancamentos.push({
-                                    acao: tipo,
-                                    transacao: transacao,   
-                                    memo: 'Securitização: Projeto '+lkpProjeto.companyname,
-                                    subsidiary: novoRegistro.getValue('subsidiary'),
-                                    custbody_rsc_projeto_obra_gasto_compra: nomeProjeto.value,
-                                    custbody_ref_parcela: novoRegistro.id,
-                                    custbody_lrc_fatura_principal: sqlResults[0].custbody_lrc_fatura_principal,
-                                    // custbody_lrc_fatura_principal: loadReg.getValue('custbody_lrc_fatura_principal'),
-                                    custbody_rsc_empproj_securitizado: true,
-                                    line: [{
-                                        account: lkpProjeto.custentity_rsc_d_baixa_clientes[0].value,
-                                        debit: novoRegistro.getValue('total'),
+                            if (lkpProjeto.custentity_rsc_securitizado[0]) {
+                                var bsc_cnab_conta_bancaria = search.create({type: "customrecord_rsc_cnab_bankaccount",
+                                    filters: [
+                                       ["custrecord_rsc_cnab_ba_entity_ls","anyof",lkpProjeto.custentity_rsc_securitizado[0].value]
+                                    ],
+                                    columns: [
+                                       search.createColumn({name: "custrecord_rsc_cnab_ba_accounting_ls", label: "Conta Contábil"})
+                                    ]
+                                }).run().getRange(0,1);
+                                log.audit('bsc_cnab_conta_bancaria', bsc_cnab_conta_bancaria);
+
+                                if (bsc_cnab_conta_bancaria.length > 0) {
+                                    arrayLancamentos.push({
+                                        acao: 'create',
+                                        transacao: transacao,   
                                         memo: 'Securitização: Projeto '+lkpProjeto.companyname,
-                                        entity: '',
-                                        location: '',
-                                        custcol_rsc_devido_subsidiary: lkpProjeto.subsidiary[0].value
-                                        
-                                    },{
-                                        account: lkpProjeto.custentity_rsc_c_baixa_clientes[0].value,
-                                        credit: novoRegistro.getValue('total'),
-                                        memo: 'Securitização: Projeto '+lkpProjeto.companyname,
-                                        entity: '',
-                                        location: '',
-                                        custcol_rsc_devido_subsidiary: lkpProjeto.subsidiary[0].value
-                                    },{
-                                        account: lkpProjeto.custentity_rsc_d_receb_clientes[0].value,
-                                        debit: novoRegistro.getValue('total'),
-                                        memo: 'Securitização: Projeto '+lkpProjeto.companyname,
-                                        entity: '',
-                                        location: '',
-                                        custcol_rsc_devido_subsidiary: lkpProjeto.subsidiary[0].value
-                                    },{
-                                        account: lkpProjeto.custentity_rsc_c_receb_clientes[0].value,
-                                        credit: novoRegistro.getValue('total'),
-                                        memo: 'Securitização: Projeto '+lkpProjeto.companyname,
-                                        entity: '',
-                                        location: '',
-                                        custcol_rsc_devido_subsidiary: lkpProjeto.subsidiary[0].value
-                                    }]               
-                                });
+                                        subsidiary: novoRegistro.getValue('subsidiary'),
+                                        custbody_rsc_projeto_obra_gasto_compra: nomeProjeto.value,
+                                        custbody_ref_parcela: novoRegistro.id,
+                                        custbody_lrc_fatura_principal: sqlResults[0].custbody_lrc_fatura_principal,
+                                        // custbody_lrc_fatura_principal: loadReg.getValue('custbody_lrc_fatura_principal'),
+                                        custbody_rsc_empproj_securitizado: true,
+                                        line: [{
+                                            account: bsc_cnab_conta_bancaria[0].getValue('custrecord_rsc_cnab_ba_accounting_ls'),
+                                            debit: novoRegistro.getValue('total'),
+                                            memo: 'Securitização: Projeto '+lkpProjeto.companyname,
+                                            entity: '',
+                                            location: '',
+                                            custcol_rsc_devido_subsidiary: lkpProjeto.subsidiary[0].value
+                                            
+                                        },{
+                                            account: lkpProjeto.custentity_rsc_c_baixa_clientes[0].value,
+                                            credit: novoRegistro.getValue('total'),
+                                            memo: 'Securitização: Projeto '+lkpProjeto.companyname,
+                                            entity: '',
+                                            location: '',
+                                            custcol_rsc_devido_subsidiary: lkpProjeto.subsidiary[0].value
+                                        },{
+                                            account: lkpProjeto.custentity_rsc_d_receb_clientes[0].value,
+                                            debit: novoRegistro.getValue('total'),
+                                            memo: 'Securitização: Projeto '+lkpProjeto.companyname,
+                                            entity: '',
+                                            location: '',
+                                            custcol_rsc_devido_subsidiary: lkpProjeto.subsidiary[0].value
+                                        },{
+                                            account: lkpProjeto.custentity_rsc_c_receb_clientes[0].value,
+                                            credit: novoRegistro.getValue('total'),
+                                            memo: 'Securitização: Projeto '+lkpProjeto.companyname,
+                                            entity: '',
+                                            location: '',
+                                            custcol_rsc_devido_subsidiary: lkpProjeto.subsidiary[0].value
+                                        }]               
+                                    });
+                                }
+                                
                             } else {
                                 arrayLancamentos.push({
-                                    acao: tipo,
+                                    // acao: tipo,
+                                    acao: 'create',
                                     transacao: transacao,
                                     memo: '',
                                     subsidiary: novoRegistro.getValue('subsidiary'),
                                     custbody_ref_parcela: novoRegistro.id,
                                     custbody_lrc_fatura_principal: sqlResults[0].custbody_lrc_fatura_principal,
                                     // custbody_lrc_fatura_principal: loadReg.getValue('custbody_lrc_fatura_principal'),
-                                    line: [{
-                                        account: contaSubsidiaria(subsidiaria),
-                                        debit: total,
-                                        memo: '',
-                                        entity: sqlResults[0].entity,
-                                        location: sqlResults[0].location,
-                                        custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary
-                                        // entity: loadReg.getValue('entity'),
-                                        // location: loadReg.getValue('location')
-                                    }]               
-                                });
-            
-                                var cm = {
-                                    amount: 0
-                                }
-            
-                                for (i=0; i<sqlResults.length; i++) {
-                                    var item = sqlResults[0].item;
-                                    var amount = sqlResults[0].foreignamount;
-            
-                                    var itemAccount = search.lookupFields({type: 'serviceitem',
-                                        id: item,
-                                        columns: ['incomeaccount']
-                                    });
-                                    log.audit('itemAccount', itemAccount);
-            
-                                    if (item == 28650) {
-                                        arrayLancamentos[0].line.push({
-                                            account: parametroScript.getParameter('custscript_rsc_cdt_pagamento_fatura_1'),
-                                            credit: amount,
-                                            memo: '',
-                                            entity: sqlResults[0].entity,
-                                            location: sqlResults[0].location,
-                                            custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary
-                                            // entity: loadReg.getValue('entity'),
-                                            // location: loadReg.getValue('location')
-                                        });
-                                    }
-            
-                                    if (item == 28651 || item == 28652 || item == 30694 || item == 30697 || item == 30698) {
-                                        cm.amount = cm.amount + amount;
-            
-                                        if (!cm.account && (item == 28651 || item == 28652 || item == 30697 || item == 30698)) {
-                                            cm.account = itemAccount.incomeaccount[0].value;
-                                        }
-                                    }
-                                }
-                                
-                                if (cm.amount) {
-                                    arrayLancamentos[0].line.push({
-                                        account: cm.account,
-                                        credit: cm.amount,
-                                        memo: '',
-                                        entity: sqlResults[0].entity,
-                                        location: sqlResults[0].location,
-                                        custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary
-                                        // entity: loadReg.getValue('entity'),
-                                        // location: loadReg.getValue('location')
-                                    });
-                                }                           
+                                    line: []               
+                                });                              
+                            }
 
-                                // conta = search.lookupFields({type: 'serviceitem',
-                                //     id: parametroScript.getParameter('custscript_rsc_cdt_pagamento_fatura_1'),
-                                //     columns: ['incomeaccount']
-                                // }).incomeaccount[0].value;
+                            var cm = {
+                                amount: 0
+                            }
+
+                            // 2811020100 APROPRIAÇÃO RECEITA IMOBILIÁRIA FISCAL - MÊS
+                            var conta_ApropriacaoReceitaImobiliariaFiscal = 0;
+                            // conta_ApropriacaoReceitaImobiliariaFiscal = conta_ApropriacaoReceitaImobiliariaFiscal + total;
+        
+                            for (i=0; i<sqlResults.length; i++) {
+                                var item = sqlResults[i].item;
+                                var amount = Math.abs(sqlResults[i].foreignamount);
+                                var itemAccount = search.lookupFields({type: 'serviceitem',
+                                    id: item,
+                                    columns: ['incomeaccount']
+                                });
+                                log.audit('itemAccount', itemAccount);
+        
+                                if (item == 28650) {
+                                    conta_ApropriacaoReceitaImobiliariaFiscal = conta_ApropriacaoReceitaImobiliariaFiscal + amount;
+                                    arrayLancamentos[0].line.push({
+                                        account: parametroScript.getParameter('custscript_rsc_dbt_apropriacao_1'),
+                                        debit: amount,
+                                        memo: '',
+                                        entity: sqlResults[0].entity,
+                                        location: sqlResults[0].location,
+                                        custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary
+                                        // entity: loadReg.getValue('entity'),
+                                        // location: loadReg.getValue('location')
+                                    });
+                                }
+        
+                                if (item == 28651 || item == 28652 || item == 30694 || item == 30697 || item == 30698) {
+                                    cm.amount = cm.amount + amount;
+                                    conta_ApropriacaoReceitaImobiliariaFiscal += cm.amount;
+        
+                                    if (!cm.account && (item == 28651 || item == 28652 || item == 30697 || item == 30698)) {
+                                        cm.account = parametroScript.getParameter('custscript_rsc_dbt_apropriacao_2');
+                                    }
+                                }
+                            }
                             
-                                // arrayLancamentos.push({
-                                //     acao: tipo,
-                                //     transacao: transacao,
-                                //     memo: '',
-                                //     subsidiary: novoRegistro.getValue('subsidiary'),
-                                //     custbody_lrc_fatura_principal: loadReg.getValue('custbody_lrc_fatura_principal'),
-                                //     custbody_ref_parcela: novoRegistro.id,
-                                //     line: [{
-                                //         account: parametroScript.getParameter('custscript_rsc_dbt_pagamento_fatura_1'),
-                                //         debit: amount,
-                                //         memo: '',
-                                //         entity: novoRegistro.getValue('entity'),
-                                //         location: novoRegistro.getValue('location')
-                                //     },{
-                                //         account: conta,
-                                //         credit: amount,
-                                //         memo: '',
-                                //         entity: novoRegistro.getValue('entity'),
-                                //         location: novoRegistro.getValue('location')
-                                //     }]               
-                                // });
-                            }   
+                            if (cm.amount) {
+                                arrayLancamentos[0].line.push({
+                                    account: cm.account,
+                                    debit: cm.amount,
+                                    memo: '',
+                                    entity: sqlResults[0].entity,
+                                    location: sqlResults[0].location,
+                                    custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary
+                                    // entity: loadReg.getValue('entity'),
+                                    // location: loadReg.getValue('location')
+                                });
+
+                                arrayLancamentos[0].line.push({
+                                    account: parametroScript.getParameter('custscript_rsc_cdt_apropriacao_1'),
+                                    credit: conta_ApropriacaoReceitaImobiliariaFiscal,
+                                    memo: '',
+                                    entity: sqlResults[0].entity,
+                                    location: sqlResults[0].location,
+                                    custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary
+                                    // entity: loadReg.getValue('entity'),
+                                    // location: loadReg.getValue('location')
+                                });
+                            } else {
+                                arrayLancamentos[0].line.push({
+                                    account: parametroScript.getParameter('custscript_rsc_cdt_apropriacao_1'),
+                                    credit: conta_ApropriacaoReceitaImobiliariaFiscal,
+                                    memo: '',
+                                    entity: sqlResults[0].entity,
+                                    location: sqlResults[0].location,
+                                    custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary
+                                    // entity: loadReg.getValue('entity'),
+                                    // location: loadReg.getValue('location')
+                                });
+                            }                         
+
+                            // conta = search.lookupFields({type: 'serviceitem',
+                            //     id: parametroScript.getParameter('custscript_rsc_cdt_pagamento_fatura_1'),
+                            //     columns: ['incomeaccount']
+                            // }).incomeaccount[0].value;
+                        
+                            // arrayLancamentos.push({
+                            //     acao: tipo,
+                            //     transacao: transacao,
+                            //     memo: '',
+                            //     subsidiary: novoRegistro.getValue('subsidiary'),
+                            //     custbody_lrc_fatura_principal: loadReg.getValue('custbody_lrc_fatura_principal'),
+                            //     custbody_ref_parcela: novoRegistro.id,
+                            //     line: [{
+                            //         account: parametroScript.getParameter('custscript_rsc_dbt_pagamento_fatura_1'),
+                            //         debit: amount,
+                            //         memo: '',
+                            //         entity: novoRegistro.getValue('entity'),
+                            //         location: novoRegistro.getValue('location')
+                            //     },{
+                            //         account: conta,
+                            //         credit: amount,
+                            //         memo: '',
+                            //         entity: novoRegistro.getValue('entity'),
+                            //         location: novoRegistro.getValue('location')
+                            //     }]               
+                            // }); 
                         }
                                              
                     // }
@@ -2201,7 +2233,7 @@ const afterSubmit = (context) => {
 
                 if (arrayLancamentos.length > 0) {          
                     log.audit('arrayLancamentos', arrayLancamentos);
-                    // taskLancamentos(arrayLancamentos);
+                    taskLancamentos(arrayLancamentos);
                 }
             } 
         break;
@@ -2302,7 +2334,7 @@ const afterSubmit = (context) => {
                 });
                 log.audit('lkpProjeto', lkpProjeto);
 
-                if (lkpProjeto.custentity_rsc_securitizado == true) {
+                if (lkpProjeto.custentity_rsc_securitizado[0]) {
                     arrayLancamentos.push({
                         acao: tipo,
                         transacao: transacao,   

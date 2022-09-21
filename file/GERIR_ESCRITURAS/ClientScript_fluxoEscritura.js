@@ -170,10 +170,23 @@ define(["require", "exports", "N/record", "N/currentRecord", "N/search", "N/log"
                 fieldId: 'custrecord_lrc_referente_faturamento',
                 value: tabelaAndamentoDados.faturaId
             });
-            newTabelaAndamentoStatus.setValue({
-                fieldId: 'custrecord_lrc_referente_cliente',
-                value: tabelaAndamentoDados.clienteReferente
+            const lookupSO = search_1.default.lookupFields({type: 'salesorder',
+                id: tabelaAndamentoDados.faturaId,
+                columns: ['entity','custbody_rsc_status_contrato']
             });
+            log_1.default.audit('lookupSO', lookupSO);
+            // Transferido (Cessão de Direito)
+            if (lookupSO.custbody_rsc_status_contrato[0].value == 4) {
+                newTabelaAndamentoStatus.setValue({
+                    fieldId: 'custrecord_lrc_referente_cliente',
+                    value: lookupSO.entity[0].value
+                });
+            } else {
+                newTabelaAndamentoStatus.setValue({
+                    fieldId: 'custrecord_lrc_referente_cliente',
+                    value: tabelaAndamentoDados.clienteReferente
+                });
+            }            
             newTabelaAndamentoStatus.setValue({
                 fieldId: 'custrecord_lrc_status_alterado',
                 value: tabelaAndamentoDados.statusAtualId
@@ -387,11 +400,12 @@ define(["require", "exports", "N/record", "N/currentRecord", "N/search", "N/log"
         }).run().getRange({
             start: 0,
             end: 1
-        })[0];
-        if (parametrizacoes) {
+        });
+        log_1.default.debug("getRecordParametrizacoes", parametrizacoes);
+        if (parametrizacoes.length > 0) {
             return record_1.default.load({
                 type: 'customrecord_lrc_parametrizacao_escritur',
-                id: parametrizacoes.id
+                id: parametrizacoes[0].id
             });
         }
         return false;

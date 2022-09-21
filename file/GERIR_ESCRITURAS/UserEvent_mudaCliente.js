@@ -27,20 +27,27 @@ define(["require", "exports", "N/log", "N/record", "./ClientScript_fluxoEscritur
                         type: 'customrecord_lrc_controle_escrituracao',
                         id: Number(controleEscritura)
                     });
-                    var statusControleEscrituraAntigo = controleEscrituraAntigoRecord.getValue('custrecord_lrc_status_escrituracao');
-                    var jsonFaturaDados = {
-                        tipoEscrituracao: 0,
-                        novaDataInicio: 0,
-                        novaDataPlanejadaEntrega: 0,
-                        statusAtualEscrituracaoId: statusControleEscrituraAntigo,
-                        controleEscrituracaoId: controleEscritura,
-                        newStatusId: 26,
-                        escrituraEncerrada: true,
-                        subsidiaria: controleEscrituraAntigoRecord.getValue('subsidiary'),
-                        baixaAlienacao: 0
-                    };
-                    ClientScript_fluxoEscritura_1.changeDeedControlStatus(jsonFaturaDados);
-                    log_1.default.debug('muda cliente', 'done');
+                    var status = controleEscrituraAntigoRecord.getValue('custrecord_lrc_status_escrituracao');
+                    // Se o status for "Escritura transferida" significa que o processo foi realizado.
+                    if (status != 26) {
+                        var statusControleEscrituraAntigo = controleEscrituraAntigoRecord.getValue('custrecord_lrc_status_escrituracao');
+                        var jsonFaturaDados = {
+                            tipoEscrituracao: 0,
+                            novaDataInicio: 0,
+                            novaDataPlanejadaEntrega: 0,
+                            statusAtualEscrituracaoId: statusControleEscrituraAntigo,
+                            controleEscrituracaoId: controleEscritura,
+                            newStatusId: 26,
+                            escrituraEncerrada: true,
+                            subsidiaria: controleEscrituraAntigoRecord.getValue('subsidiary'),
+                            baixaAlienacao: 0
+                        };
+                        ClientScript_fluxoEscritura_1.changeDeedControlStatus(jsonFaturaDados);
+                        log_1.default.audit('afterSubmit', {controleEscritura: controleEscritura, status: status});
+                    } else {
+                        log_1.default.audit('afterSubmit', {controleEscritura: controleEscritura, status: {value: status, text: 'Escritura transferida'}});
+                    }
+                    
                 }
             }
         }

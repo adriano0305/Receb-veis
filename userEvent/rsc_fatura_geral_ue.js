@@ -7,21 +7,78 @@ const custPage = 'custpage_rsc_';
 const ZERO = Number('0').toFixed(2);
 
 define(['N/file', 'N/https', 'N/log', 'N/query', 'N/record', 'N/runtime', 'N/url', 'N/search', 'N/task', 'N/ui/serverWidget'], (file, https, log, query, record, runtime, url, search, task, serverWidget) => {
+const remold = (array) => {
+    log.audit('remold', array);
+
+    var arrayParcelas = [];
+
+    for (var prop in array) {
+        if (arrayParcelas.length > 0) {
+            const result = arrayParcelas.find(parcela => parcela.ver === array[prop].ver);
+
+            if (result) {
+                log.audit('Finded!', result);
+            } else {
+                arrayParcelas.push({
+                    ver: array[prop].ver,
+                    reparcelamentoOrigem: array[prop].reparcelamentoOrigem,
+                    reparcelamentoDestino: array[prop].reparcelamentoDestino,
+                    parcela: array[prop].parcela,
+                    prestacao: array[prop].prestacao,
+                    tipoParcela: array[prop].tipoParcela,
+                    valorOriginal: array[prop].valorOriginal,
+                    multa: array[prop].multa,
+                    juros: array[prop].juros,                    
+                    valorAtualizado: array[prop].valorAtualizado,
+                    dataPagamento: array[prop].dataPagamento,
+                    valorPago: array[prop].valorPago, 
+                    documento: array[prop].documento,
+                    status: array[prop].status,
+                    indice: array[prop].indice,
+                });
+            }
+        } else {
+            arrayParcelas.push({
+                ver: array[prop].ver,
+                reparcelamentoOrigem: array[prop].reparcelamentoOrigem,
+                reparcelamentoDestino: array[prop].reparcelamentoDestino,
+                parcela: array[prop].parcela,
+                prestacao: array[prop].prestacao,
+                tipoParcela: array[prop].tipoParcela,
+                valorOriginal: array[prop].valorOriginal,
+                multa: array[prop].multa,
+                juros: array[prop].juros,                    
+                valorAtualizado: array[prop].valorAtualizado,
+                dataPagamento: array[prop].dataPagamento,
+                valorPago: array[prop].valorPago,
+                documento: array[prop].documento,
+                status: array[prop].status,
+                indice: array[prop].indice,
+            });
+        }
+    }
+
+    return arrayParcelas;
+}
+
 const localizarParcelas = (idFatura) => {
     var ambiente = runtime.envType;
     
     var arrayParcelas = [];
     const mes = Number ('30');
 
-    var sql = "SELECT t.id, t.status, t.custbody_rsc_projeto_obra_gasto_compra, t.duedate, t.tranid, t.custbodyrsc_tpparc, t.custbody_rsc_tran_unidade, t.custbody_rsc_amortizada, "+
+    var sql = "SELECT t.id, t.status, t.custbody_rsc_projeto_obra_gasto_compra, t.duedate, t.tranid, t.custbodyrsc_tpparc, t.custbody_rsc_tran_unidade, t.custbody_rsc_amortizada, t.custbody_rsc_data_pagamento, "+
     "t.custbody_rsc_reparcelamento_origem, t.custbody_rsc_reparcelamento_destino, t.foreigntotal, t.shipdate, t.closedate, t.foreignamountpaid, t.foreignamountunpaid, t.custbody_rsc_indice, "+
-    "tl.item, tl.quantity, tl.rate "+
+    "tl.item, tl.quantity, tl.rate, tl.foreignamount "+
     "FROM transaction as t "+
     "INNER JOIN transactionline AS tl ON (tl.transaction = t.id) "+
     "WHERE t.recordtype = 'invoice' "+
     "AND t.voided = 'F' "+
     "AND t.custbody_lrc_fatura_principal = ? "+
+    "AND tl.rate IS NOT NULL "+
+    "AND tl.item != 5 "+
     "ORDER BY t.duedate ASC";
+    log.audit('sql', sql);
 
     var consulta = query.runSuiteQL({
         query: sql,
@@ -48,19 +105,20 @@ const localizarParcelas = (idFatura) => {
                 id: sqlResults[0].custbody_rsc_projeto_obra_gasto_compra,
                 columns: ['custentity_rsc_perc_cessao_direito','custentity_rsc_juros','custentity_rsc_multa','custentity_rsc_project_date_habite']
             });
-            log.audit('lookupEmpreendimento', lookupEmpreendimento);
+            // log.audit('lookupEmpreendimento', lookupEmpreendimento);
             
-            jurosAA = lookupEmpreendimento.custentity_rsc_juros.replace('%','') / 100; // a.a
-            multa = lookupEmpreendimento.custentity_rsc_multa.replace('%','') / 100;   
+            jurosAA = (lookupEmpreendimento.custentity_rsc_juros.replace('%','') / 100) || 0; // a.a
+            multa = (lookupEmpreendimento.custentity_rsc_multa.replace('%','') / 100) || 0;   
+        } else {
+            jurosAA = 0; // a.a
+            multa = 0;   
         }            
 
-        const calcJuros = (total, delay, fees) => {
-            // var interestCalc = (Math.pow((1 + fees), (1 / 360)) - 1).toFixed(8);    
+        const calcJuros = (total, delay, fees) => { 
             interestCalc = (fees / 360).toFixed(8);
             interestCalc = interestCalc * delay;
             interestCalc = interestCalc * total;            
             return interestCalc;
-            // return interestCalc.toFixed(2);
         }
 
         const pagamentos = (idFI) => {
@@ -143,44 +201,129 @@ const localizarParcelas = (idFatura) => {
             });
         
             var sqlResults = consulta.asMappedResults();
-            log.audit('sqlResults', sqlResults);
+            // log.audit('sqlResults', sqlResults);
             
             return sqlResults.length > 0 ? Math.abs(sqlResults[0].foreignamount) : ZERO;
         }
 
-        for (var prop in sqlResults) {  
+        const juros_e_acrescimos_moratorios = (id, sqlResults) => {
+            // log.audit('juros_e_acrescimos_moratorios', {id: id, sqlResults: sqlResults});
+            
+            var ja = 0;
+            var acrescimosMoratorios = 0;
+
+            for (i=0; i<sqlResults.length; i++) { 
+                if (sqlResults[i].id == id) {         
+                    // Juros à incorrer e Acréscimos Moratórios
+                    if (sqlResults[i].item == 28654 || sqlResults[i].item == 30694) {
+                        // log.audit(sqlResults[i].id, {item: sqlResults[i].item, rate: sqlResults[i].rate});
+                        ja = ja + sqlResults[i].rate;
+
+                        if (sqlResults[i].item == 30694) {
+                            acrescimosMoratorios = sqlResults[i].rate;
+                        }                    
+                    } 
+                    // log.audit(sqlResults[i].id, {ja: ja, acrescimosMoratorios: acrescimosMoratorios});
+                } 
+            }
+
+            return {ja: ja > 0 ? ja : 0, acrescimosMoratorios: acrescimosMoratorios > 0 ? acrescimosMoratorios : 0}
+        }
+
+        const totalOriginalParcelas = (id, allotments) => {
+            log.audit('juros_e_acrescimos_moratorios', {id: id, allotments: allotments});
+            
+            const procV = allotments.find(allot => allot.id === id);
+            log.audit('procV', procV);
+            
+            return procV ? procV.foreingamount : 0;
+        }
+
+        var arrayVO = [];
+
+        /** O primeiro loop se faz necessário para preencher o valor original da parcela.
+         * Item: FRAÇÃO PRINCIPAL 
+         * Obs.: via query estava caindo na governança do Netsuite.
+         * Mensagem do sistema: "SSS_USAGE_LIMIT_EXCEEDED: O limite de uso de execução de script foi ultrapassado"
+         * */
+
+        // for (var prop in sqlResults) { 
+        //     if (sqlResults[prop].status !== 'V') {
+        //         if (sqlResults[prop].item == 28650 || sqlResults[prop].item == 28627) {
+        //             if (arrayVO.length == 0) {
+        //                 arrayVO.push({
+        //                     id: sqlResults[prop].id,
+        //                     tranid: sqlResults[prop].tranid,
+        //                     item: sqlResults[prop].item,
+        //                     foreingamount: Math.abs(sqlResults[prop].foreignamount)
+        //                 })
+        //             } else {
+        //                 const lock = arrayVO.find(installment => installment.id === sqlResults[prop].id);
+        //                 if (!lock) {
+        //                     arrayVO.push({
+        //                         id: sqlResults[prop].id,
+        //                         tranid: sqlResults[prop].tranid,
+        //                         item: sqlResults[prop].item,
+        //                         foreingamount: Math.abs(sqlResults[prop].foreignamount)
+        //                     });
+        //                 }
+        //             }
+        //         }
+        //         // log.audit('arrayVO', arrayVO);          
+        //     }
+        // }
+
+        for (var prop in sqlResults) { 
             if (sqlResults[prop].status !== 'V') {
-                // const loadReg = record.load({type: 'invoice', id: sqlResults[prop].id});                    
-                // var linha_juros_price_incorrer = loadReg.findSublistLineWithValue('item', 'item', 19607); // JUROS PRICE A INCORRER                    
-                // var juros_price_incorrer = linha_juros_price_incorrer == -1 ? ZERO : juros_price_incorrer = loadReg.getSublistValue('item', 'amount', linha_juros_price_incorrer);
+                if (sqlResults[prop].item == 28650 || sqlResults[prop].item == 28651 || sqlResults[prop].item == 28652 || sqlResults[prop].item == 31346 || sqlResults[prop].item == 31347 || sqlResults[prop].item == 28627) {
+                    if (arrayVO.length == 0) {
+                        arrayVO.push({
+                            id: sqlResults[prop].id,
+                            tranid: sqlResults[prop].tranid,
+                            item: sqlResults[prop].item,
+                            foreingamount: Math.abs(sqlResults[prop].foreignamount)
+                        })
+                    } else {
+                        const lock = arrayVO.find(installment => installment.id === sqlResults[prop].id);
+                        if (!lock) {
+                            arrayVO.push({
+                                id: sqlResults[prop].id,
+                                tranid: sqlResults[prop].tranid,
+                                item: sqlResults[prop].item,
+                                foreingamount: Math.abs(sqlResults[prop].foreignamount)
+                            });
+                        } else {
+                            lock.foreingamount += Math.abs(sqlResults[prop].foreignamount)
+                        }
+                    }
+                }
+                // log.audit('arrayVO', arrayVO);          
+            }
+        }
 
-                // O ID abaixo é do serviço "Juros Price à Incorrer".
-                var juros_price_incorrer = sqlResults[prop].item == 28654 ? sqlResults[prop].rate : ZERO;
-
+        for (var prop in sqlResults) {
+            if (sqlResults[prop].status !== 'V') {
                 var parcelaVencida = validarVencimento(sqlResults[prop].duedate);
-                // var parcelaVencida = !sqlResults[prop].shipdate ? validarVencimento(sqlResults[prop].duedate) : validarVencimento2(sqlResults[prop].shipdate, sqlResults[prop].duedate);
-                // log.audit(sqlResults[prop].tranid, parcelaVencida);
+
+                var mj;
+                if (parcelaVencida.status == true) {
+                    mj = juros_e_acrescimos_moratorios(sqlResults[prop].id, sqlResults);
+                } else {
+                    mj = juros_e_acrescimos_moratorios(sqlResults[prop].id, sqlResults);
+                }              
 
                 var juros;
                 if (sqlResults[prop].foreignamountpaid > 0) {
-                    juros = parcelaVencida.status == true ? calcJuros((sqlResults[prop].foreigntotal - sqlResults[prop].foreignamountpaid), parcelaVencida.diasMora, jurosAA) : 0;
+                    juros = parcelaVencida.status == true ? calcJuros((sqlResults[prop].foreigntotal - mj.ja - sqlResults[prop].foreignamountpaid), parcelaVencida.diasMora, jurosAA) : 0;
                 } else {
-                    juros = parcelaVencida.status == true ? calcJuros(sqlResults[prop].foreigntotal, parcelaVencida.diasMora, jurosAA) : 0;
-                }                    
-
-                // var juros = parcelaVencida.status == true ? calcJuros(sqlResults[prop].foreigntotal, parcelaVencida.diasMora, jurosAA) : 0;
-                // juros = parcelaVencida.status == true ? sqlResults[prop].foreigntotal * (jurosAA / mes) * parcelaVencida.diasMora : 0;
+                    juros = parcelaVencida.status == true ? calcJuros(sqlResults[prop].foreigntotal - mj.ja, parcelaVencida.diasMora, jurosAA) : 0;
+                }
 
                 var valorAtualizado;
-
                 if (parcelaVencida.status == true) {
-                    valorAtualizado = sqlResults[prop].foreigntotal - sqlResults[prop].foreignamountpaid;
-                    valorAtualizado = (valorAtualizado + ((sqlResults[prop].foreigntotal - sqlResults[prop].foreignamountpaid) * multa)).toFixed(2);
+                    valorAtualizado = sqlResults[prop].foreigntotal - mj.ja - sqlResults[prop].foreignamountpaid;
+                    valorAtualizado = (valorAtualizado + ((sqlResults[prop].foreigntotal - mj.ja - sqlResults[prop].foreignamountpaid) * multa)).toFixed(2);
                     valorAtualizado = parseFloat(valorAtualizado) + parseFloat(juros);
-
-                    // valorAtualizado = sqlResults[prop].foreigntotal;
-                    // valorAtualizado = (valorAtualizado + (sqlResults[prop].foreigntotal * multa)).toFixed(2);
-                    // valorAtualizado = parseFloat(valorAtualizado) + parseFloat(juros);
                 }                 
             
                 var status, vp;
@@ -189,75 +332,90 @@ const localizarParcelas = (idFatura) => {
                     status = 'Pago';
                 } else if ((sqlResults[prop].foreignamountpaid < sqlResults[prop].foreigntotal) || sqlResults[prop].foreignamountpaid == 0) {
                     if (sqlResults[prop].custbody_rsc_reparcelamento_destino) {
-                        // status = 'Pago';
                         status = 'Aberto';
                         vp = sqlResults[prop].foreigntotal - sqlResults[prop].foreignamountpaid;
                     } else {
                         status = 'Aberto';
                         vp = sqlResults[prop].foreigntotal - sqlResults[prop].foreignamountpaid;
                     }
-                }   
-
-                // if (runtime.getCurrentUser().id == 3588) {
-                //     var registroRelacionados = pagamentos(sqlResults[prop].id);
-                // }
+                }
 
                 var amortizada = sqlResults[prop].custbody_rsc_amortizada;
                 if (amortizada == 'T') {
                     if (sqlResults[prop].foreignamountpaid > 0) {
                         amortizada = 0;
-                        // amortizada = sqlResults[prop].foreignamountpaid;
                     } else {
                         amortizada = valorAtualizado || vp;
-                    }                        
-                    // amortizada = valorAtualizado || vp;
+                    }
                     status = 'Aberto';
                 } else {
                     amortizada = sqlResults[prop].foreignamountpaid;
                 }
 
-                // var calcMulta = (sqlResults[prop].foreignamountpaid > 0 && parcelaVencida.status == true) ? (sqlResults[prop].foreigntotal - sqlResults[prop].foreignamountpaid) * multa : 
-                // (parcelaVencida.status == true ? sqlResults[prop].foreigntotal * multa : 0);
-
-               var vo;
+                var vo;
                 if (status == 'Pago') {
                     calcMulta = juros = valorAtualizado = ZERO;
                     vp = sqlResults[prop].foreigntotal;
-                    // O ID abaixo é do serviço "FRAÇÂO DO PRINCIPAL".
-                    vo = linhaTransacao(sqlResults[prop].id, 28650); 
-                } else {
-                    calcMulta = (sqlResults[prop].foreignamountpaid > 0 && parcelaVencida.status == true) ? (sqlResults[prop].foreigntotal - sqlResults[prop].foreignamountpaid) * multa : 
-                    (parcelaVencida.status == true ? sqlResults[prop].foreigntotal * multa : 0);
 
-                    vo = sqlResults[prop].foreignamountunpaid - juros_price_incorrer;
+                    // O ID abaixo é do serviço "FRAÇÂO DO PRINCIPAL".
+                    // vo = linhaTransacao(sqlResults[prop].id, 28650); 
+                    vo = totalOriginalParcelas(sqlResults[prop].id, arrayVO);
+                    vo = vo > 0 ? vo : sqlResults[prop].foreigntotal;
+                } else {
+                    calcMulta = (sqlResults[prop].foreignamountpaid > 0 && parcelaVencida.status == true) ? (sqlResults[prop].foreigntotal - mj.ja - sqlResults[prop].foreignamountpaid) * multa : 
+                    (parcelaVencida.status == true ? (sqlResults[prop].foreigntotal - mj.ja) * multa : 0);
+
+                    vo = sqlResults[prop].foreignamountunpaid;
                 }
-                
-                arrayParcelas.push({
-                    ver: sqlResults[prop].id,
-                    reparcelamentoOrigem: sqlResults[prop].custbody_rsc_reparcelamento_origem,
-                    reparcelamentoDestino: sqlResults[prop].custbody_rsc_reparcelamento_destino,
-                    parcela: sqlResults[prop].duedate,
-                    prestacao: sqlResults[prop].foreigntotal,
-                    tipoParcela: sqlResults[prop].custbodyrsc_tpparc,
-                    // valorOriginal: sqlResults[prop].foreignamountunpaid,
-                    valorOriginal: vo,
-                    // multa: calcMulta,
-                    // juros: Number(juros).toFixed(2),
-                    multa: calcMulta > 0 ? calcMulta - juros_price_incorrer : calcMulta,
-                    juros: juros > 0 ? Number(juros - juros_price_incorrer).toFixed(2) : Number(juros).toFixed(2),
-                    // multa: sqlResults[prop].foreignamountpaid > 0 ? 0 : (parcelaVencida.status == true ? sqlResults[prop].foreigntotal * multa : 0),
-                    // juros: sqlResults[prop].foreignamountpaid > 0 ? 0 : juros,    
-                    // valorAtualizado: parcelaVencida.status == true ? valorAtualizado : vp,
-                    valorAtualizado: parcelaVencida.status == true ? valorAtualizado - juros_price_incorrer : vp - juros_price_incorrer,                     
-                    // valorAtualizado: vp || (parcelaVencida.status == true ? valorAtualizado : sqlResults[prop].foreigntotal),
-                    // valorAtualizado: parcelaVencida.status == true ? (sqlResults[prop].foreigntotal + (sqlResults[prop].foreigntotal * multa) + juros) : sqlResults[prop].foreigntotal,
-                    dataPagamento: sqlResults[prop].foreignamountpaid > 0 ? sqlResults[prop].closedate : null,
-                    valorPago: amortizada,
-                    // valorPago: sqlResults[prop].foreignamountpaid,
-                    documento: sqlResults[prop].tranid,
-                    status: status,
-                    indice: sqlResults[prop].custbody_rsc_indice
-                });                  
+
+                if (arrayParcelas.length == 0) {
+                    arrayParcelas.push({
+                        ver: sqlResults[prop].id,
+                        reparcelamentoOrigem: sqlResults[prop].custbody_rsc_reparcelamento_origem,
+                        reparcelamentoDestino: sqlResults[prop].custbody_rsc_reparcelamento_destino,
+                        parcela: sqlResults[prop].duedate,
+                        prestacao: sqlResults[prop].foreigntotal,
+                        tipoParcela: sqlResults[prop].custbodyrsc_tpparc,
+                        valorOriginal: vo,
+                        multa: calcMulta > 0 ? calcMulta : calcMulta,
+                        juros: Number(juros).toFixed(2) || ZERO,
+                        // valorAtualizado: status == 'Pago' ? 0 : (parcelaVencida.status == true ? valorAtualizado - juros_price_incorrer : vp - juros_price_incorrer),
+                        valorAtualizado: status == 'Pago' ? 0 : (parcelaVencida.status == true ? (vo - mj.ja) + calcMulta + juros + mj.acrescimosMoratorios : (vp - mj.ja) + calcMulta + juros + mj.acrescimosMoratorios),
+                        dataPagamento: sqlResults[prop].custbody_rsc_data_pagamento ? sqlResults[prop].custbody_rsc_data_pagamento : (sqlResults[prop].foreignamountpaid > 0 ? sqlResults[prop].closedate : null),
+                        valorPago: amortizada,
+                        documento: sqlResults[prop].tranid,
+                        status: status,
+                        indice: sqlResults[prop].custbody_rsc_indice
+                    });
+                } else {
+                    const seek = arrayParcelas.find(parcela => parcela.ver === sqlResults[prop].id);
+
+                    if (seek) {
+                        seek.valorOriginal = vo;
+                        seek.multa = calcMulta;
+                        seek.juros = Number(juros).toFixed(2) || ZERO;
+                        seek.valorAtualizado = status == 'Pago' ? 0 : (parcelaVencida.status == true ? (vo - mj.ja) + calcMulta + juros + mj.acrescimosMoratorios : (vp - mj.ja) + calcMulta + juros + mj.acrescimosMoratorios);
+                    } else {
+                        arrayParcelas.push({
+                            ver: sqlResults[prop].id,
+                            reparcelamentoOrigem: sqlResults[prop].custbody_rsc_reparcelamento_origem,
+                            reparcelamentoDestino: sqlResults[prop].custbody_rsc_reparcelamento_destino,
+                            parcela: sqlResults[prop].duedate,
+                            prestacao: sqlResults[prop].foreigntotal,
+                            tipoParcela: sqlResults[prop].custbodyrsc_tpparc,
+                            valorOriginal: vo,
+                            multa: calcMulta > 0 ? calcMulta : calcMulta,
+                            juros: Number(juros).toFixed(2) || ZERO,
+                            // valorAtualizado: status == 'Pago' ? 0 : (parcelaVencida.status == true ? valorAtualizado - juros_price_incorrer : vp - juros_price_incorrer),
+                            valorAtualizado: status == 'Pago' ? 0 : (parcelaVencida.status == true ? (vo - mj.ja) + calcMulta + juros + mj.acrescimosMoratorios : (vp - mj.ja) + calcMulta + juros + mj.acrescimosMoratorios),
+                            dataPagamento: sqlResults[prop].custbody_rsc_data_pagamento ? sqlResults[prop].custbody_rsc_data_pagamento : (sqlResults[prop].foreignamountpaid > 0 ? sqlResults[prop].closedate : null),
+                            valorPago: amortizada,
+                            documento: sqlResults[prop].tranid,
+                            status: status,
+                            indice: sqlResults[prop].custbody_rsc_indice
+                        });
+                    }
+                }                 
             }
         }
     }
@@ -288,7 +446,7 @@ const localizarParcelas = (idFatura) => {
 }
 
 const validarVencimento = (duedate) => {
-    log.audit('validarVencimento', duedate);
+    // log.audit('validarVencimento', duedate);
 
     const hoje = new Date();
 
@@ -506,7 +664,7 @@ const sublista_fluxoPagamentos = (form, idFatura) => {
             
             if (prestacoes.arrayParcelas[i].tipoParcela) {
                 lkpTipoParcela = search.lookupFields({
-                    type: 'customlist_rsc_tipo_parcela',
+                    type: 'customrecord_rsc_tipo_parcela',
                     id: prestacoes.arrayParcelas[i].tipoParcela,
                     columns: 'name'
                 });
@@ -546,8 +704,8 @@ const sublista_fluxoPagamentos = (form, idFatura) => {
             //     id: indice.id,
             //     line: i,
             //     value: lookupIndice.name
-            // });
-
+            // }); 
+            
             sublistaParcelas.setSublistValue({
                 id: multa.id,
                 line: i,
@@ -559,7 +717,7 @@ const sublista_fluxoPagamentos = (form, idFatura) => {
                 line: i,
                 value: prestacoes.arrayParcelas[i].juros
             });
-
+            
             sublistaParcelas.setSublistValue({
                 id: valorAtualizado.id,
                 line: i,
@@ -598,7 +756,7 @@ const sublista_proponentes = (form, idFatura) => {
                 "id","custrecord_rsc_clientes_contratos","custrecord_rsc_pct_part","custrecord_rsc_fat_contrato","custrecord_rsc_principal"
             ]
         }).run().getRange(0,100);
-        log.audit('bscProp', bscProp);
+        // log.audit('bscProp', bscProp);
 
         return bscProp;
     }
@@ -652,7 +810,7 @@ const sublista_proponentes = (form, idFatura) => {
 
     if (listaProponentes.length > 0) {
         for (i=0; i<listaProponentes.length; i++) {
-            log.audit(i, listaProponentes[i]);
+            // log.audit(i, listaProponentes[i]);
             sublistaProp.setSublistValue({
                 id: linhaProp.id,
                 line: i,

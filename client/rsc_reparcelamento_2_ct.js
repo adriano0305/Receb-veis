@@ -27,6 +27,31 @@ function juros_e_acrescimos_moratorios(id) {
     
 }
 
+function VAM(ua, vp) {
+    console.log('VAM', JSON.stringify({ua: ua, vp: vp}));
+
+    const dia = 24 * 60 * 60 * 1000;
+
+    const partesUA = ua.split("/");
+    var vencimentoUA = new Date(partesUA[2], partesUA[1] - 1, partesUA[0]);
+    var mlsUA = vencimentoUA.getTime();
+
+    const partesVP = vp.split("/");
+    var vencimentoVP = new Date(partesVP[2], partesVP[1] - 1, partesVP[0]);
+    var mlsVP = vencimentoVP.getTime();
+    console.log('VAM', JSON.stringify({
+        vp: {
+            partesVP: partesVP, vencimentoVP: vencimentoVP, mlsVP: mlsVP,
+        },
+        ua: {
+            partesUA: partesUA, vencimentoUA: vencimentoUA, mlsUA: mlsUA
+        },
+        'vencimentoVP > vencimentoUA': vencimentoVP > vencimentoUA
+    }));
+
+    return vencimentoVP > vencimentoUA;
+}
+
 function validarDataVencimento3(vencimentoEntrada, vencimentoParcela) {
     const partesVE = vencimentoEntrada.split("/");
 
@@ -111,11 +136,12 @@ function validarVencimento(novoVencimento, vencimentoParcela) {
     }
 }
 
-function recalcJuros(novoVencimento, job, arrayParcelas) {
+function recalcJuros(novoVencimento, job, arrayParcelas, am) {
     console.log('recalcJuros', JSON.stringify({
         novoVencimento: novoVencimento,
         job: job,
-        arrayParcelas: arrayParcelas
+        arrayParcelas: arrayParcelas,
+        am: am
     }));
 
     // const bscEmpreendimento = gspal.job(empreendimento);
@@ -140,31 +166,36 @@ function recalcJuros(novoVencimento, job, arrayParcelas) {
     arrayParcelas.forEach(function(parcela) {
         var parcelaVencida = validarVencimento(novoVencimento, parcela.vencimento);
 
-        var juros, valorAtualizado, mj;
+        var valor_atualizacaoMonetaria, juros, jurosD2, valorAtualizado, mj;
 
         if (parcelaVencida.status == true) {
             mj = parcela.moratorios;
             // mj = gspal.juros_e_acrescimos_moratorios(parcela.id_financiamento_invoice, 30694); // ACRÉSCIMO SOBRE FINANCIAMENTO
             // mj = juros_e_acrescimos_moratorios(parcela.id_financiamento_invoice);
-            juros = calcJuros(parcela.valor, parcelaVencida.diasMora, jurosAA);
+            valor_atualizacaoMonetaria = parseFloat(parcela.valor) + parseFloat(am);
+            juros = calcJuros(valor_atualizacaoMonetaria, parcelaVencida.diasMora, jurosAA);
+            jurosD2 = calcJuros(parcela.valorD2, parcelaVencida.diasMora, jurosAA);
             valorAtualizado = (parcela.valor + (parcela.valor * multa));
             // valorAtualizado = (parseFloat(valorAtualizado) + parseFloat(juros) + (parcela.valor * multa) + parseFloat(parcela.calculoPR.proRata)).toFixed(2);
-            valorAtualizado = (parseFloat(valorAtualizado) + parseFloat(juros) + (parcela.valor * multa) + parseFloat(parcela.calculoPR.proRata) + parseFloat(mj)).toFixed(2);
+            valorAtualizado = (parseFloat(valorAtualizado) + parseFloat(juros) + (valor_atualizacaoMonetaria * multa) + parseFloat(parcela.calculoPR.proRata) + parseFloat(mj)).toFixed(2);
             console.log(parcela.ver, JSON.stringify({
                 parcelaVencida: parcelaVencida,
                 valor: parcela.valor,
                 juros: juros,
-                multa: (parcela.valor * multa).toFixed(2),
+                jurosD2: jurosD2,
+                multa: (valor_atualizacaoMonetaria * multa).toFixed(2),
                 proRata: parcela.calculoPR,
                 valorAtualizado: valorAtualizado
             }));
             
-            parcela.multa = (parcela.valor * multa).toFixed(2);
+            parcela.multa = (valor_atualizacaoMonetaria * multa).toFixed(2);
             parcela.juros = juros;
+            parcela.jurosD2 = jurosD2;
             parcela.valorAtualizado = valorAtualizado;
         } else {
             valorAtualizado = (parseFloat(parcela.valor) + parseFloat(parcela.calculoPR.proRata)).toFixed(2);
             parcela.valorAtualizado = valorAtualizado;
+            parcela.jurosD2 = ZERO;
         }
     });
     // console.log('arrayParcelas Atualizado', JSON.stringify(arrayParcelas));
@@ -414,6 +445,13 @@ function simulacao(ordem) {
             line: i
         });
 
+        var valorD2 = (
+            registroAtual.getSublistValue({sublistId: listaParcelas, fieldId: custPage+'valor_original', line: i}) * (
+                registroAtual.getSublistValue({sublistId: listaParcelas, fieldId: custPage+'fator_correcao_2', line: i}) /
+                registroAtual.getSublistValue({sublistId: listaParcelas, fieldId: custPage+'fator_correcao_3', line: i})
+            )
+        ).toFixed(2);
+
         if (reparcelar == true) {
             arrayParcelas.push({
                 linha: i,
@@ -457,6 +495,7 @@ function simulacao(ordem) {
                     fieldId: custPage+'valor_original',
                     line: i
                 })).toFixed(2),
+                valorD2: valorD2,
                 // valor: (registroAtual.getSublistValue({
                 //     sublistId: listaParcelas,
                 //     fieldId: custPage+'valor_original',
@@ -515,6 +554,7 @@ function simulacao(ordem) {
                     fieldId: custPage+'ultima_atualizacao',
                     line: i
                 }),
+                atualizacao_monetaria_calculada: false,
                 fator_correcao_2: registroAtual.getSublistValue({
                     sublistId: listaParcelas,
                     fieldId: custPage+'fator_correcao_2',
@@ -605,10 +645,10 @@ function simulacao(ordem) {
     var total_valorAtualizado_recalc = 0; 
     var jurosIncorrer = 0;
     
-    var lkpFI, ultimaAtualizacao;
+    var lkpFI, ultimaAtualizacao, validarUA;
 
     if (renegociacao == 'Amortização') {
-        const split_pv = primeiroVencimento.split('/');
+        const split_pv = primeiroVencimento.split('/');        
 
         // lkpFI = gspal.lkpFI(arrayParcelas[0].id_financiamento_invoice);
         // console.log('lkpFI', JSON.stringify(lkpFI));
@@ -624,8 +664,12 @@ function simulacao(ordem) {
 
         // ultimaAtualizacao = lkpFI.custbody_rsc_ultima_atualizacao ? lkpFI.custbody_rsc_ultima_atualizacao.split('/') : '';
         
-        if (typeof(ultimaAtualizacao) == 'object' && ultimaAtualizacao[1] < split_pv[1]) {
+        validar_atualizacao_monetaria = VAM(arrayParcelas[0].ultimaAtualizacao, primeiroVencimento);
+        
+        // if (typeof(ultimaAtualizacao) == 'object' && ultimaAtualizacao[1] < split_pv[1]) {
+        if (typeof(ultimaAtualizacao) == 'object' && validar_atualizacao_monetaria == true) {
             calculoAM = atualizacaoMonetaria(renegociacao, new Date(registroAtual.getValue({fieldId: custPage+'data_inicio'})), arrayParcelas);
+            arrayParcelas[0].atualizacao_monetaria_calculada = true;
         } else {
             calculoAM = 0;
         }
@@ -640,6 +684,8 @@ function simulacao(ordem) {
             proRata: Number(calculoPR.proRata).toFixed(2),
             valorAtualizado: (parseFloat(total_valorAtualizado) + parseFloat(calculoPR.proRata)).toFixed(2)
         }
+
+        json.campanhaDesconto = campanhaDesconto(primeiroVencimento, json.somatorioParcelas.valorAtualizado, objJob.empreendimento); 
 
         registroAtual.setValue({
             fieldId: custPage+'dif_dias',
@@ -661,7 +707,7 @@ function simulacao(ordem) {
             // lkpFI = gspal.lkpFI(arrayParcelas[0].id_financiamento_invoice);
             // console.log('lkpFI', JSON.stringify(lkpFI));
         
-            // lkpFI = search.lookupFields({type: 'invoice',
+            // lkpFI = search.lookupFi 'invoice',
             //     id: arrayParcelas[i].id_financiamento_invoice,
             //     columns: ['custbody_rsc_ultima_atualizacao']
             // });
@@ -671,8 +717,12 @@ function simulacao(ordem) {
 
             ultimaAtualizacao = arrayParcelas[i].ultimaAtualizacao.split('/');
             
-            if (typeof(ultimaAtualizacao) == 'object' && ultimaAtualizacao[1] < split_ve[1]) {
+            validar_atualizacao_monetaria = VAM(arrayParcelas[i].ultimaAtualizacao, vencimentoEntrada);
+            
+            // if (typeof(ultimaAtualizacao) == 'object' && ultimaAtualizacao[1] < split_ve[1]) {
+            if (typeof(ultimaAtualizacao) == 'object' && validar_atualizacao_monetaria == true) {
                 novo_array_parcelas.push(arrayParcelas[i]);
+                arrayParcelas[i].atualizacao_monetaria_calculada = true;
             }
         }
 
@@ -686,14 +736,15 @@ function simulacao(ordem) {
 
         if (renegociacao == 'Recálculo de atrasos' || renegociacao == 'Antecipação' || renegociacao == 'Inadimplentes') {
             // var recalcularJuros = recalcJuros(vencimentoEntrada, registroAtual.getValue({fieldId: custPage+'empreendimento'}), arrayParcelas);
-            var recalcularJuros = recalcJuros(vencimentoEntrada, objJob, arrayParcelas);
+            var recalcularJuros = recalcJuros(vencimentoEntrada, objJob, arrayParcelas, calculoAM);
 
             recalcularJuros.forEach(function(ap) {
                 indiceRecalc = ap.indice;
                 tipo_parcela_recalc = ap.tipoParcela;
                 total_valorOriginal_recalc += (parseFloat(ap.valor));
                 total_multa_recalc += parseFloat(ap.multa);
-                total_juros_recalc += parseFloat(ap.juros);
+                // total_juros_recalc += parseFloat(ap.juros);
+                total_juros_recalc += parseFloat(ap.jurosD2);
                 total_valorAtualizado_recalc += parseFloat(ap.valorAtualizado);
                 // jurosIncorrer += parseFloat(jurosIncorrer + jurosPriceIncorrer(ap.id_financiamento_invoice));
             });
@@ -706,23 +757,30 @@ function simulacao(ordem) {
             //     total_valorAtualizado_recalc: total_valorAtualizado_recalc
             // });
 
+            var valor_atualizado_com_am = parseFloat(total_valorOriginal_recalc) + parseFloat(calculoAM || ZERO);
+            var multaD2 = objJob.multaEmpreendimento ? Number(valor_atualizado_com_am * (objJob.multaEmpreendimento / 100)).toFixed(2) : '';
+            var valor_atualizado_d2 = parseFloat(total_valorOriginal_recalc) + parseFloat(multaD2) + total_juros_recalc;
+            console.log(JSON.stringify({valor_atualizado_com_am: valor_atualizado_com_am, multaD2: multaD2, valor_atualizado_d2: valor_atualizado_d2}));
+
             json.somatorioParcelas = {
                 indice: indiceRecalc,
                 tipoParcela: tipo_parcela_recalc,
                 valorOriginal: Number(total_valorOriginal_recalc).toFixed(2),
                 // valorOriginal: Number(total_valorOriginal_recalc - jurosIncorrer).toFixed(2),
-                multa: Number(total_multa_recalc).toFixed(2),
+                // multa: Number(total_multa_recalc).toFixed(2),
+                multa: Number(multaD2).toFixed(2),
                 juros: Number(total_juros_recalc).toFixed(6),
                 atualizacaoMonetaria: calculoAM || ZERO,
                 proRata: Number(calculoPR.proRata).toFixed(2),
-                valorAtualizado: Number(total_valorAtualizado_recalc).toFixed(2),
+                // valorAtualizado: Number(total_valorAtualizado_recalc).toFixed(2),
+                valorAtualizado: Number(valor_atualizado_d2).toFixed(2),
                 // valorAtualizado: Number(total_valorAtualizado_recalc - jurosIncorrer).toFixed(2),
                 jurosIncorrer: Number(jurosIncorrer).toFixed(2)
-            }
+            }   
 
-            // if (renegociacao == 'Antecipação') {
-            //     json.campanhaDesconto = campanhaDesconto(vencimentoEntrada, total_valorOriginal_recalc); 
-            // }             
+            if (renegociacao == 'Antecipação') {
+                json.campanhaDesconto = campanhaDesconto(vencimentoEntrada, json.somatorioParcelas.valorAtualizado, objJob.empreendimento); 
+            }             
         }
 
         registroAtual.setValue({
@@ -792,87 +850,70 @@ function simulacao(ordem) {
     // }
 }
 
-function campanhaDesconto(data, valor) {
-    console.log('campanhaDesconto', data);
-
+function campanhaDesconto(data, valor, empreendimento) {
+    console.log('campanhaDesconto', JSON.stringify({data: data, valor: valor, empreendimento: empreendimento}));
+    
     var vigenciaInicio, vigenciaFim;
-    
-    var split = data.split('/');
-    console.log('split', split);
 
-    var mes = split[1];
-    var ano = split[2];
-    
-    switch (mes) {
-        case '01': 
-            vigenciaInicio = String('01/'+mes+'/'+ano);
-            vigenciaFim = String('31/'+mes+'/'+ano);
-        break;
+    const hoje = new Date();
+    var dia = hoje.getDate()+1 > 9 ? hoje.getDate()+1 : '0'+(hoje.getDate()+1);
+    var mes = hoje.getMonth()+1 > 9 ? hoje.getMonth()+1 : '0'+(hoje.getMonth()+1);
+    var ano = hoje.getFullYear();
 
-        case '02': 
-            vigenciaInicio = String('01/'+mes+'/'+ano);
-            vigenciaFim = String('28/'+mes+'/'+ano);
-        break;
+    // Início da vigência
+    var inicioVigencia = String(dia+'/'+mes+'/'+ano);
+    var split_inicio_vigencia = inicioVigencia.split('/');
+    var mes_inicio_vigencia = split_inicio_vigencia[1];
+    var ano_inicio_vigencia = split_inicio_vigencia[2];
 
-        case '03': 
-            vigenciaInicio = String('01/'+mes+'/'+ano);
-            vigenciaFim = String('31/'+mes+'/'+ano);
-        break;
-
-        case '04': 
-            vigenciaInicio = String('01/'+mes+'/'+ano);
-            vigenciaFim = String('30/'+mes+'/'+ano);
-        break;
-
-        case '05': 
-            vigenciaInicio = String('01/'+mes+'/'+ano);
-            vigenciaFim = String('31/'+mes+'/'+ano);
-        break;
-
-        case '06': 
-            vigenciaInicio = String('01/'+mes+'/'+ano);
-            vigenciaFim = String('30/'+mes+'/'+ano);
-        break;
-
-        case '07': 
-            vigenciaInicio = String('01/'+mes+'/'+ano);
-            vigenciaFim = String('31/'+mes+'/'+ano);
-        break;
-
-        case '08': 
-            vigenciaInicio = String('01/'+mes+'/'+ano);
-            vigenciaFim = String('31/'+mes+'/'+ano);
-        break;
-
-        case '09': 
-            vigenciaInicio = String('01/'+mes+'/'+ano);
-            vigenciaFim = String('30/'+mes+'/'+ano);
-        break;
-
-        case '10': 
-            vigenciaInicio = String('01/'+mes+'/'+ano);
-            vigenciaFim = String('31/'+mes+'/'+ano);
-        break;
-
-        case '11': 
-            vigenciaInicio = String('01/'+mes+'/'+ano);
-            vigenciaFim = String('30/'+mes+'/'+ano);
-        break;
-
-        case '12': 
-            vigenciaInicio = String('01/'+mes+'/'+ano);
-            vigenciaFim = String('31/'+mes+'/'+ano);
-        break;
+    switch (mes_inicio_vigencia) {
+        case '01': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '02': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '03': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '04': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '05': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '06': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '07': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '08': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '09': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '10': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '11': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '12': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
     }
+
+    // Fim da vigência
+    var split_fim_vigencia = data.split('/');    
+    var mes_fim_vigencia = split_fim_vigencia[1];
+    var ano_fim_vigencia = split_fim_vigencia[2];
+    console.log('splits', JSON.stringify({split_inicio_vigencia: split_inicio_vigencia, split_fim_vigencia: split_fim_vigencia}));
+
+    switch (mes_fim_vigencia) {
+        case '01': vigenciaFim = String('31/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '02': vigenciaFim = String('28/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '03': vigenciaFim = String('31/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '04': vigenciaFim = String('30/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '05': vigenciaFim = String('31/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '06': vigenciaFim = String('30/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '07': vigenciaFim = String('31/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '08': vigenciaFim = String('31/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '09': vigenciaFim = String('30/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '10': vigenciaFim = String('31/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '11': vigenciaFim = String('30/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '12': vigenciaFim = String('31/'+mes+'/'+ano); break;
+    }
+
+    console.log(JSON.stringify({vigenciaInicio: vigenciaInicio, vigenciaFim: vigenciaFim}));
 
     var bscCD = search.create({type: "customrecord_rsc_campanhadesconto",
         filters: [
-            ["custrecord_rsc_vigenciainicio","on",vigenciaInicio], "AND", 
-            ["custrecord_rsc_vigenciafim","on",vigenciaFim], "AND", 
+            // ["custrecord_rsc_vigenciainicio","on",vigenciaInicio], "AND", 
+            // ["custrecord_rsc_vigenciafim","on",vigenciaFim], "AND", 
+            ["custrecord_rsc_vigenciafim","onorafter",vigenciaFim], "AND",
+            ["custrecord_rsc_empreendimentocampanha","anyof",empreendimento], "AND",
             ["isinactive","is","F"]
         ],
         columns: [
-            "id","name","custrecord_rsc_vigenciainicio","custrecord_rsc_vigenciafim","custrecord_rsc_percentualdesconto"
+            "id","name","custrecord_rsc_vigenciainicio","custrecord_rsc_vigenciafim","custrecord_rsc_percentualdesconto","custrecord_rsc_observacaocampanha"
         ]
     }).run().getRange(0,1);
     console.log('bscCD', JSON.stringify(bscCD));
@@ -898,10 +939,10 @@ function campanhaDesconto(data, valor) {
         } 
     } else {
         objCD = {    
-            valor: valor,
+            valor: ZERO,
             cd: '',        
-            desconto: desconto,
-            valorDesconto: valor
+            desconto: ZERO,
+            valorDesconto: ZERO
         }
     }   
     
@@ -1085,18 +1126,21 @@ function atualizacaoMonetaria(reneg, dt1, dt2) {
         fator_anterior3 = dt2[0].fator_correcao_3;  
         // fator_anterior2 = fatorCorrecao(primeiroVencimento.mes, 'anterior2', dt2[0].indice);
         // fator_anterior3 = fatorCorrecao(primeiroVencimento.mes, 'anterior3', dt2[0].indice);   
-        valor_atualizacao_monetaria = valor_atualizacao_monetaria + (((fator_anterior2 / fator_anterior3) - 1) * dt2[0].valorAtualizado);
+        // valor_atualizacao_monetaria = valor_atualizacao_monetaria + (((fator_anterior2 / fator_anterior3) - 1) * dt2[0].valorAtualizado);
+        valor_atualizacao_monetaria = valor_atualizacao_monetaria + (((fator_anterior2 / fator_anterior3) - 1) * dt2[0].valor);
     } else {
         for (i=0; i<dt2.length; i++) {
             fator_anterior2 = dt2[i].fator_correcao_2;
             fator_anterior3 = dt2[i].fator_correcao_3; 
-            var valorAtualizado = dt2[i].valorAtualizado;
+            // var valorAtualizado = dt2[i].valorAtualizado;
+            var valor = dt2[i].valor;
+            console.log({valor: valor});
             // var indice = dt2[i].indice;
             // var valorAtualizado = dt2[i].valorAtualizado;
             // fator_anterior2 = fatorCorrecao(primeiroVencimento.mes, 'anterior2', indice);
             // fator_anterior3 = fatorCorrecao(primeiroVencimento.mes, 'anterior3', indice); 
             if (fator_anterior2 > 0 && fator_anterior3 > 0) {
-                valor_atualizacao_monetaria = valor_atualizacao_monetaria + (((fator_anterior2 / fator_anterior3) - 1) * valorAtualizado);
+                valor_atualizacao_monetaria = valor_atualizacao_monetaria + (((fator_anterior2 / fator_anterior3) - 1) * valor);
             }
         }
     }      

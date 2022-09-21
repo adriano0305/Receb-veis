@@ -466,21 +466,21 @@ function onRequest(context) {
             label: 'Status'
         });
 
-        var reparcelar = sublistaReparcelamento.addField({
-            id: custPage+'reparcelar',
-            type: serverWidget.FieldType.CHECKBOX,
-            label: 'Reparcelar'
-        }); 
-
         var ultimaAtualizacao = sublistaReparcelamento.addField({
             id: custPage+'ultima_atualizacao',
             type: serverWidget.FieldType.DATE,
             label: 'Última Atualização'
         });
 
-        ultimaAtualizacao.updateDisplayType({
-            displayType: serverWidget.FieldDisplayType.HIDDEN
-        });
+        // ultimaAtualizacao.updateDisplayType({
+        //     displayType: serverWidget.FieldDisplayType.HIDDEN
+        // });
+
+        var reparcelar = sublistaReparcelamento.addField({
+            id: custPage+'reparcelar',
+            type: serverWidget.FieldType.CHECKBOX,
+            label: 'Reparcelar'
+        });         
 
         var fator_correcao_2 = sublistaReparcelamento.addField({
             id: custPage+'fator_correcao_2',
@@ -861,8 +861,206 @@ function localizarParcelas(idFatura) {
         var arrayFC = [];
         var quest;
 
-        const fatorCorrecao = (mes, status, indice) => {
-            log.audit('fatorCorrecao', {mes: mes, status: status, indice: indice});
+        // const fatorCorrecao = (mes, status, indice) => {
+        //     log.audit('fatorCorrecao', {mes: mes, status: status, indice: indice});
+        //     var bsc_UnidadeCorrecao;
+        
+        //     if (status == 'anterior2') {
+        //         var mes2 = mes - 2;
+        //         if (mes2 == -1) {
+        //             mes2 = 11;
+        //         } else if (mes2 == 00 || mes2 == '00') {
+        //             mes2 = 12;
+        //         }
+
+        //         var ano;
+        
+        //         if (mes == 01 || mes == 02 || mes == 03) {
+        //             ano = new Date().getFullYear();
+        //         } else {
+        //             ano = new Date().getFullYear();
+        //         }
+        
+        //         var periodo =  {
+        //             inicio: "01/"+(mes2 > 9 ? mes2 : '0'+mes2)+"/"+ano,
+        //             fim: ultimoDiaMes(mes2, ano)
+        //         }
+
+        //         if (arrayFC.length == 0) {
+        //             bsc_UnidadeCorrecao = gspal.fatorCorrecao(status, indice, periodo.inicio, periodo.fim);
+        //             arrayFC.push(bsc_UnidadeCorrecao);
+        //         } else {
+        //             quest = arrayFC.find(fc => (fc.id === indice && fc.status === status));
+
+        //             if (quest) {
+        //                 bsc_UnidadeCorrecao = quest;
+        //             } else {
+        //                 bsc_UnidadeCorrecao = gspal.fatorCorrecao(status, indice, periodo.inicio, periodo.fim);
+        //                 arrayFC.push(bsc_UnidadeCorrecao);
+        //             }
+        //         }
+
+        //         if (Array.isArray(bsc_UnidadeCorrecao) == true) {
+        //             return Number('0');
+        //         } else {
+        //             var fator_atualizado = Number(bsc_UnidadeCorrecao.custrecord_rsc_hif_factor_percent).toFixed(6);
+        //             var data_vigencia = bsc_UnidadeCorrecao.custrecord_rsc_hif_effective_date;
+    
+        //             var split_dtV = data_vigencia.split('/');
+        //             log.audit('anterior2', {fator_atualizado: fator_atualizado, data_vigencia: data_vigencia, split_dtV: split_dtV});
+                    
+        //             if (split_dtV[1] == mes2) {
+        //                 return fator_atualizado;
+        //             }
+        //         }
+        
+        //         // bsc_UnidadeCorrecao = gspal.fatorCorrecao(indice, periodo.inicio, periodo.fim);
+        
+        //         // if (bsc_UnidadeCorrecao.length > 0) {
+        //         //     for (i=0; i<bsc_UnidadeCorrecao.length; i++) {
+        //         //         var fator_atualizado = Number(bsc_UnidadeCorrecao[i].custrecord_rsc_hif_factor_percent).toFixed(6);
+        //         //         var data_vigencia = bsc_UnidadeCorrecao[i].custrecord_rsc_hif_effective_date;
+        
+        //         //         var split_dtV = data_vigencia.split('/');
+        //         //         log.audit('anterior2', {fator_atualizado: fator_atualizado, data_vigencia: data_vigencia, split_dtV: split_dtV});
+                        
+        //         //         if (split_dtV[1] == mes2) {
+        //         //             return fator_atualizado;
+        //         //         }
+        //         //     }        
+        //         // } else {
+        //         //     return Number('0');
+        //         // }
+        //     } else if (status == 'anterior3') {
+        //         var mes3 = mes - 3;
+        //         if (mes3 == -2) {
+        //             mes3 = 10;
+        //         } else if (mes3 == -1) {
+        //             mes3 = 11;
+        //         } else if (mes3 == 00 || mes3 == '00') {
+        //             mes3 = 12;
+        //         }
+                
+        //         var ANO;
+        
+        //         if (mes == 01 || mes == 02 || mes == 03) {
+        //             ANO = new Date().getFullYear() - 1;
+        //         } else {
+        //             ANO = new Date().getFullYear();
+        //         }
+                        
+        //         var periodo =  {
+        //             inicio: "01/"+(mes3 > 9 ? mes3 : '0'+mes3)+"/"+ANO,
+        //             fim: ultimoDiaMes(mes3, ANO)
+        //         }
+
+        //         if (arrayFC.length == 0) {
+        //             bsc_UnidadeCorrecao = gspal.fatorCorrecao(status, indice, periodo.inicio, periodo.fim);
+        //             arrayFC.push(bsc_UnidadeCorrecao);
+        //         } else {
+        //             quest = arrayFC.find(fc => (fc.id === indice && fc.status === status));
+
+        //             if (quest) {
+        //                 bsc_UnidadeCorrecao = quest;
+        //             } else {
+        //                 bsc_UnidadeCorrecao = gspal.fatorCorrecao(status, indice, periodo.inicio, periodo.fim);
+        //                 arrayFC.push(bsc_UnidadeCorrecao);
+        //             }
+        //         }
+
+        //         if (Array.isArray(bsc_UnidadeCorrecao) == true) {
+        //             if (bsc_UnidadeCorrecao.length > 0) {
+        //                 return Number(bsc_UnidadeCorrecao[0].custrecord_rsc_hif_factor_percent).toFixed(6);
+        //             } else {
+        //                 return 0;
+        //             }
+        //         } else {
+        //             return Number(bsc_UnidadeCorrecao.custrecord_rsc_hif_factor_percent).toFixed(6);
+        //         }
+                                
+        //         // bsc_UnidadeCorrecao = gspal.fatorCorrecao(indice, periodo.inicio, periodo.fim);
+        
+        //         // if (bsc_UnidadeCorrecao.length > 0) {
+        //         //     return Number(bsc_UnidadeCorrecao[0].custrecord_rsc_hif_factor_percent).toFixed(6);
+        //         // } else {
+        //         //     return 0;
+        //         // }
+        //     } else {
+        //         var date = new Date();
+        //         var primeiroDia = new Date(date.getFullYear(), date.getMonth(), 1);
+        //         var ultimoDia = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+        
+        //         var objPD = {
+        //             dia: primeiroDia.getDate() <= '9' ? '0'+primeiroDia.getDate() : primeiroDia.getDate(),
+        //             mes: primeiroDia.getMonth()+1 <= '9' ? '0'+(primeiroDia.getMonth()+1) : primeiroDia.getMonth()+1,
+        //             ano: primeiroDia.getFullYear(),
+        //             hifen: '/'
+        //         }
+        
+        //         var strPD = String(objPD.dia + objPD.hifen + objPD.mes + objPD.hifen + objPD.ano);
+        
+        //         var objUD = {
+        //             dia: ultimoDia.getDate() <= '9' ? '0'+ultimoDia.getDate() : ultimoDia.getDate(),
+        //             mes: ultimoDia.getMonth()+1 <= '9' ? '0'+(ultimoDia.getMonth()+1) : ultimoDia.getMonth()+1,
+        //             ano: ultimoDia.getFullYear(),
+        //             hifen: '/'
+        //         }
+        
+        //         var strUD = String(objUD.dia + objUD.hifen + objUD.mes + objUD.hifen + objUD.ano);
+                
+        //         if (arrayFC.length == 0) {
+        //             bsc_UnidadeCorrecao = gspal.fatorCorrecao(status, indice, periodo.inicio, periodo.fim);
+        //             arrayFC.push(bsc_UnidadeCorrecao);
+        //         } else {
+        //             quest = arrayFC.find(fc => (fc.id === indice && fc.status === status));
+
+        //             if (quest) {
+        //                 bsc_UnidadeCorrecao = quest;
+        //             } else {
+        //                 bsc_UnidadeCorrecao = gspal.fatorCorrecao(status, indice, strPD, strUD);
+        //                 arrayFC.push(bsc_UnidadeCorrecao);
+        //             }
+        //         }
+
+        //         if (Array.isArray(bsc_UnidadeCorrecao) == true) {
+        //             if (bsc_UnidadeCorrecao.length > 0) {
+        //                 log.audit('anterior', Number(bsc_UnidadeCorrecao[0].custrecord_rsc_hif_factor_percent).toFixed(6) || 0);
+        //                 return Number(bsc_UnidadeCorrecao[0].custrecord_rsc_hif_factor_percent).toFixed(6) || 0;
+        //             } else {
+        //                 return 0;
+        //             }
+        //         } else {
+        //             return Number(bsc_UnidadeCorrecao.custrecord_rsc_hif_factor_percent).toFixed(6);
+        //         }
+                
+        //         // bsc_UnidadeCorrecao = gspal.fatorCorrecao(indice, strPD, strUD);
+        
+        //         // if (bsc_UnidadeCorrecao.length > 0) {
+        //         //     log.audit('anterior', Number(bsc_UnidadeCorrecao[0].custrecord_rsc_hif_factor_percent).toFixed(6) || 0);
+        //         //     return Number(bsc_UnidadeCorrecao[0].custrecord_rsc_hif_factor_percent).toFixed(6) || 0;
+        //         // } else {
+        //         //     return 0;
+        //         // }
+        //     }
+        // }
+
+        var arrayIndices = [];
+
+        for (var key in sqlResults) {
+            if (arrayIndices.length == 0) {
+                arrayIndices.push(sqlResults[key].custbody_rsc_indice);
+            } else {
+                var localizarIndice = arrayIndices.find(ai => ai === sqlResults[key].custbody_rsc_indice);
+                if (!localizarIndice) {
+                    arrayIndices.push(sqlResults[key].custbody_rsc_indice);
+                }
+            }            
+        }
+
+        var historicoFator = gspal.historicoFator(arrayIndices);
+
+        const fatorCorrecao = (mes, status, indice, anoUA) => {
+            log.audit('fatorCorrecao', {mes: mes, status: status, indice: indice, anoUA: anoUA});
             var bsc_UnidadeCorrecao;
         
             if (status == 'anterior2') {
@@ -882,55 +1080,25 @@ function localizarParcelas(idFatura) {
                 }
         
                 var periodo =  {
-                    inicio: "01/"+(mes2 > 9 ? mes2 : '0'+mes2)+"/"+ano,
-                    fim: ultimoDiaMes(mes2, ano)
+                    inicio: "01/"+(mes2 > 9 ? mes2 : '0'+mes2)+"/"+(anoUA ? anoUA : ano),
+                    fim: anoUA ? ultimoDiaMes(mes2, anoUA) : ultimoDiaMes(mes2, ano)
                 }
 
-                if (arrayFC.length == 0) {
-                    bsc_UnidadeCorrecao = gspal.fatorCorrecao(status, indice, periodo.inicio, periodo.fim);
-                    arrayFC.push(bsc_UnidadeCorrecao);
-                } else {
-                    quest = arrayFC.find(fc => (fc.id === indice && fc.status === status));
+                bsc_UnidadeCorrecao = historicoFator.find(el => el.custrecord_rsc_hif_correction_unit == indice && (el.custrecord_rsc_hif_effective_date == periodo.inicio || el.custrecord_rsc_hif_effective_date == periodo.fim));
+                log.audit(status, {inicio: periodo.inicio, fim: periodo.fim, bsc_UnidadeCorrecao: bsc_UnidadeCorrecao});
 
-                    if (quest) {
-                        bsc_UnidadeCorrecao = quest;
-                    } else {
-                        bsc_UnidadeCorrecao = gspal.fatorCorrecao(status, indice, periodo.inicio, periodo.fim);
-                        arrayFC.push(bsc_UnidadeCorrecao);
+                if (bsc_UnidadeCorrecao) {
+                    if (Object.keys(bsc_UnidadeCorrecao).length > 0) {
+                        if (bsc_UnidadeCorrecao.custrecord_rsc_hif_factor_percent > 0) {
+                            return Number(bsc_UnidadeCorrecao.custrecord_rsc_hif_factor_percent).toFixed(6);
+                        } else {
+                            return Number('0').toFixed(2);
+                        }                    
                     }
                 }
-
-                if (Array.isArray(bsc_UnidadeCorrecao) == true) {
-                    return Number('0');
-                } else {
-                    var fator_atualizado = Number(bsc_UnidadeCorrecao.custrecord_rsc_hif_factor_percent).toFixed(6);
-                    var data_vigencia = bsc_UnidadeCorrecao.custrecord_rsc_hif_effective_date;
-    
-                    var split_dtV = data_vigencia.split('/');
-                    log.audit('anterior2', {fator_atualizado: fator_atualizado, data_vigencia: data_vigencia, split_dtV: split_dtV});
-                    
-                    if (split_dtV[1] == mes2) {
-                        return fator_atualizado;
-                    }
+                 else {
+                    return Number('0').toFixed(2);
                 }
-        
-                // bsc_UnidadeCorrecao = gspal.fatorCorrecao(indice, periodo.inicio, periodo.fim);
-        
-                // if (bsc_UnidadeCorrecao.length > 0) {
-                //     for (i=0; i<bsc_UnidadeCorrecao.length; i++) {
-                //         var fator_atualizado = Number(bsc_UnidadeCorrecao[i].custrecord_rsc_hif_factor_percent).toFixed(6);
-                //         var data_vigencia = bsc_UnidadeCorrecao[i].custrecord_rsc_hif_effective_date;
-        
-                //         var split_dtV = data_vigencia.split('/');
-                //         log.audit('anterior2', {fator_atualizado: fator_atualizado, data_vigencia: data_vigencia, split_dtV: split_dtV});
-                        
-                //         if (split_dtV[1] == mes2) {
-                //             return fator_atualizado;
-                //         }
-                //     }        
-                // } else {
-                //     return Number('0');
-                // }
             } else if (status == 'anterior3') {
                 var mes3 = mes - 3;
                 if (mes3 == -2) {
@@ -954,37 +1122,21 @@ function localizarParcelas(idFatura) {
                     fim: ultimoDiaMes(mes3, ANO)
                 }
 
-                if (arrayFC.length == 0) {
-                    bsc_UnidadeCorrecao = gspal.fatorCorrecao(status, indice, periodo.inicio, periodo.fim);
-                    arrayFC.push(bsc_UnidadeCorrecao);
-                } else {
-                    quest = arrayFC.find(fc => (fc.id === indice && fc.status === status));
+                bsc_UnidadeCorrecao = historicoFator.find(el => el.custrecord_rsc_hif_correction_unit == indice && (el.custrecord_rsc_hif_effective_date == periodo.inicio || el.custrecord_rsc_hif_effective_date == periodo.fim));
+                log.audit(status, {inicio: periodo.inicio, fim: periodo.fim, bsc_UnidadeCorrecao: bsc_UnidadeCorrecao});
 
-                    if (quest) {
-                        bsc_UnidadeCorrecao = quest;
-                    } else {
-                        bsc_UnidadeCorrecao = gspal.fatorCorrecao(status, indice, periodo.inicio, periodo.fim);
-                        arrayFC.push(bsc_UnidadeCorrecao);
+                if (bsc_UnidadeCorrecao) {
+                    if (Object.keys(bsc_UnidadeCorrecao).length > 0) {
+                        if (bsc_UnidadeCorrecao.custrecord_rsc_hif_factor_percent > 0) {
+                            return Number(bsc_UnidadeCorrecao.custrecord_rsc_hif_factor_percent).toFixed(6);
+                        } else {
+                            return Number('0').toFixed(2);
+                        }                    
                     }
                 }
-
-                if (Array.isArray(bsc_UnidadeCorrecao) == true) {
-                    if (bsc_UnidadeCorrecao.length > 0) {
-                        return Number(bsc_UnidadeCorrecao[0].custrecord_rsc_hif_factor_percent).toFixed(6);
-                    } else {
-                        return 0;
-                    }
-                } else {
-                    return Number(bsc_UnidadeCorrecao.custrecord_rsc_hif_factor_percent).toFixed(6);
+                 else {
+                    return Number('0').toFixed(2);
                 }
-                                
-                // bsc_UnidadeCorrecao = gspal.fatorCorrecao(indice, periodo.inicio, periodo.fim);
-        
-                // if (bsc_UnidadeCorrecao.length > 0) {
-                //     return Number(bsc_UnidadeCorrecao[0].custrecord_rsc_hif_factor_percent).toFixed(6);
-                // } else {
-                //     return 0;
-                // }
             } else {
                 var date = new Date();
                 var primeiroDia = new Date(date.getFullYear(), date.getMonth(), 1);
@@ -1007,40 +1159,22 @@ function localizarParcelas(idFatura) {
                 }
         
                 var strUD = String(objUD.dia + objUD.hifen + objUD.mes + objUD.hifen + objUD.ano);
-                
-                if (arrayFC.length == 0) {
-                    bsc_UnidadeCorrecao = gspal.fatorCorrecao(status, indice, periodo.inicio, periodo.fim);
-                    arrayFC.push(bsc_UnidadeCorrecao);
-                } else {
-                    quest = arrayFC.find(fc => (fc.id === indice && fc.status === status));
 
-                    if (quest) {
-                        bsc_UnidadeCorrecao = quest;
-                    } else {
-                        bsc_UnidadeCorrecao = gspal.fatorCorrecao(status, indice, strPD, strUD);
-                        arrayFC.push(bsc_UnidadeCorrecao);
+                bsc_UnidadeCorrecao = historicoFator.find(el => el.custrecord_rsc_hif_correction_unit == indice && (el.custrecord_rsc_hif_effective_date == strPD || el.custrecord_rsc_hif_effective_date == strUD));
+                log.audit(status, {strPD: strPD, strUD: strUD, strbsc_UnidadeCorrecao: bsc_UnidadeCorrecao});
+                
+                if (bsc_UnidadeCorrecao) {
+                    if (Object.keys(bsc_UnidadeCorrecao).length > 0) {
+                        if (bsc_UnidadeCorrecao.custrecord_rsc_hif_factor_percent > 0) {
+                            return Number(bsc_UnidadeCorrecao.custrecord_rsc_hif_factor_percent).toFixed(6);
+                        } else {
+                            return Number('0').toFixed(2);
+                        }                    
                     }
                 }
-
-                if (Array.isArray(bsc_UnidadeCorrecao) == true) {
-                    if (bsc_UnidadeCorrecao.length > 0) {
-                        log.audit('anterior', Number(bsc_UnidadeCorrecao[0].custrecord_rsc_hif_factor_percent).toFixed(6) || 0);
-                        return Number(bsc_UnidadeCorrecao[0].custrecord_rsc_hif_factor_percent).toFixed(6) || 0;
-                    } else {
-                        return 0;
-                    }
-                } else {
-                    return Number(bsc_UnidadeCorrecao.custrecord_rsc_hif_factor_percent).toFixed(6);
+                 else {
+                    return Number('0').toFixed(2);
                 }
-                
-                // bsc_UnidadeCorrecao = gspal.fatorCorrecao(indice, strPD, strUD);
-        
-                // if (bsc_UnidadeCorrecao.length > 0) {
-                //     log.audit('anterior', Number(bsc_UnidadeCorrecao[0].custrecord_rsc_hif_factor_percent).toFixed(6) || 0);
-                //     return Number(bsc_UnidadeCorrecao[0].custrecord_rsc_hif_factor_percent).toFixed(6) || 0;
-                // } else {
-                //     return 0;
-                // }
             }
         }
 
@@ -1089,6 +1223,14 @@ function localizarParcelas(idFatura) {
                     (parcelaVencida.status == true ? (sqlResults[prop].foreigntotal - mj.ja) * multa : 0);
 
                     if (status == 'Aberto') {
+                        var split_ultimaAtualizacao = sqlResults[prop].custbody_rsc_ultima_atualizacao.split('/');
+
+                        var obj_ultimaAtualizacao = {
+                            dia: split_ultimaAtualizacao[0],
+                            mes: split_ultimaAtualizacao[1],
+                            ano: split_ultimaAtualizacao[2]
+                        }
+
                         if (arrayParcelas.length == 0) {
                             arrayParcelas.push({
                                 ver: sqlResults[prop].id,
@@ -1108,8 +1250,9 @@ function localizarParcelas(idFatura) {
                                 indice: sqlResults[prop].custbody_rsc_indice,
                                 ultimaAtualizacao: sqlResults[prop].custbody_rsc_ultima_atualizacao,
                                 fator_correcao_2: fatorCorrecao(hoje.mes, 'anterior2', sqlResults[prop].custbody_rsc_indice),
-                                fator_correcao_3: fatorCorrecao(hoje.mes, 'anterior3', sqlResults[prop].custbody_rsc_indice),
-                                fator_correcao_atual: fatorCorrecao(hoje.mes, 'atual', sqlResults[prop].custbody_rsc_indice),
+                                // fator_correcao_3: fatorCorrecao(hoje.mes, 'anterior3', sqlResults[prop].custbody_rsc_indice),
+                                fator_correcao_3: fatorCorrecao(split_ultimaAtualizacao[1], 'anterior2', sqlResults[prop].custbody_rsc_indice, split_ultimaAtualizacao[2]),
+                                fator_correcao_atual: fatorCorrecao(obj_ultimaAtualizacao.mes, 'atual', sqlResults[prop].custbody_rsc_indice),
                                 moratorios: mj.acrescimosMoratorios
                             });
                         } else {
@@ -1140,7 +1283,8 @@ function localizarParcelas(idFatura) {
                                     indice: sqlResults[prop].custbody_rsc_indice,
                                     ultimaAtualizacao: sqlResults[prop].custbody_rsc_ultima_atualizacao,
                                     fator_correcao_2: fatorCorrecao(hoje.mes, 'anterior2', sqlResults[prop].custbody_rsc_indice),
-                                    fator_correcao_3: fatorCorrecao(hoje.mes, 'anterior3', sqlResults[prop].custbody_rsc_indice),
+                                    // fator_correcao_3: fatorCorrecao(hoje.mes, 'anterior3', sqlResults[prop].custbody_rsc_indice),
+                                    fator_correcao_3: fatorCorrecao(split_ultimaAtualizacao[1], 'anterior2', sqlResults[prop].custbody_rsc_indice, split_ultimaAtualizacao[2]),
                                     fator_correcao_atual: fatorCorrecao(hoje.mes, 'atual', sqlResults[prop].custbody_rsc_indice),
                                     moratorios: mj.acrescimosMoratorios
                                 });
@@ -1872,6 +2016,17 @@ const construtor = (method, parameters) => {
 
         var ZERO = Number('0').toFixed(2);
 
+        var multaAntes = 0;
+        var jurosAntes = 0;
+
+        if (parameters.renegociacao == 'Inadimplentes') {
+            for (i=0; i<parameters.calculoPR.arrayParcelas.length; i++) {
+                multaAntes = parseFloat(multaAntes) + parseFloat(parameters.calculoPR.arrayParcelas[i].multaAntes);
+                jurosAntes = parseFloat(jurosAntes) + parseFloat(parameters.calculoPR.arrayParcelas[i].jurosAntes);
+            }
+            log.audit('juros/multa Antes', {jurosAntes: jurosAntes, multaAntes: multaAntes});
+        }        
+
         if (parameters.renegociacao == 'Amortização') {
             principalCalculado.defaultValue = principalDiferenca.defaultValue = parseFloat(somatorio.valorOriginal) + parseFloat(somatorio.atualizacaoMonetaria);
             proRataCalculado2.defaultValue = proRataInformado.defaultValue = proRataDiferenca.defaultValue = somatorio.proRata;
@@ -1884,8 +2039,12 @@ const construtor = (method, parameters) => {
         if (parameters.renegociacao == 'Inadimplentes' || parameters.renegociacao == 'Adimplentes' || parameters.renegociacao == 'Recálculo de atrasos' || parameters.renegociacao == 'Antecipação') {
             principalCalculado.defaultValue = principalDiferenca.defaultValue = parseFloat(somatorio.valorOriginal) + parseFloat(somatorio.atualizacaoMonetaria);
             multaCalculado.defaultValue = multaDiferenca.defaultValue = somatorio.multa;
+            // jurosCalculado.defaultValue = jurosDiferenca.defaultValue = parameters.renegociacao == 'Inadimplentes' ? Number(jurosAntes).toFixed(2) : Number(somatorio.juros).toFixed(2);
             jurosCalculado.defaultValue = jurosDiferenca.defaultValue = Number(somatorio.juros).toFixed(2);
             proRataCalculado2.defaultValue = proRataDiferenca.defaultValue = somatorio.proRata;
+            // totalCalculado.defaultValue = totalDiferenca.defaultValue = parameters.renegociacao == 'Inadimplentes' ? 
+            // (parseFloat(somatorio.valorAtualizado) + parseFloat(somatorio.atualizacaoMonetaria)) - (Number(somatorio.juros).toFixed(2) - Number(jurosAntes).toFixed(2)) :  
+            // parseFloat(somatorio.valorAtualizado) + parseFloat(somatorio.atualizacaoMonetaria);
             totalCalculado.defaultValue = totalDiferenca.defaultValue = parseFloat(somatorio.valorAtualizado) + parseFloat(somatorio.atualizacaoMonetaria);
 
             if (parameters.renegociacao == 'Recálculo de atrasos' || parameters.renegociacao == 'Antecipação') {
@@ -1902,19 +2061,19 @@ const construtor = (method, parameters) => {
             }
         }
         
-        // if (parameters.renegociacao == 'Amortização' || parameters.renegociacao == 'Antecipação') {
-        //     var campanhaDesconto = form.addField({
-        //         id: custPage+'campanha_desconto',
-        //         type: serverWidget.FieldType.TEXTAREA,
-        //         label: 'Campanha Desconto'
-        //     });
+        if (parameters.renegociacao == 'Amortização' || parameters.renegociacao == 'Antecipação') {
+            var campanhaDesconto = form.addField({
+                id: custPage+'campanha_desconto',
+                type: serverWidget.FieldType.TEXTAREA,
+                label: 'Campanha Desconto'
+            });
         
-        //     campanhaDesconto.updateDisplayType({
-        //         displayType: serverWidget.FieldDisplayType.INLINE
-        //     });
+            campanhaDesconto.updateDisplayType({
+                displayType: serverWidget.FieldDisplayType.INLINE
+            });
             
-        //     campanhaDesconto.defaultValue = JSON.stringify(parameters.campanhaDesconto);
-        // }
+            campanhaDesconto.defaultValue = JSON.stringify(parameters.campanhaDesconto);
+        }
 
         const idFatura = parameters.id ? parameters.id : parameters.recordid;
 
@@ -1979,12 +2138,13 @@ const construtor = (method, parameters) => {
             pro_rata_calculado.defaultValue = parameters.calculoPR.proRata;
             
             if (parameters.renegociacao == 'Amortização') {
-                gerarSublistaAmortizacao(form, 'sublista_resumo_reparcelamento', parameters.renegociacao, arrayParcelas, parameters.reparcelarEm, parameters.dataInicio, parameters.calculoPR, 'GET');
+                gerarSublistaAmortizacao(form, 'sublista_resumo_reparcelamento', parameters.renegociacao, arrayParcelas, parameters.reparcelarEm, parameters.dataInicio, parameters.calculoPR, 'GET', parameters.campanhaDesconto);
+                // gerarSublistaAmortizacao(form, 'sublista_resumo_reparcelamento', parameters.renegociacao, arrayParcelas, parameters.reparcelarEm, parameters.dataInicio, parameters.calculoPR, 'GET');
             } else if (parameters.renegociacao == 'Recálculo de atrasos') {
                 gerarSublistaRecalculoAtrasos(form, 'sublista_resumo_reparcelamento', parameters.renegociacao, arrayParcelas, parameters.reparcelarEm, parameters.vencimentoEntrada, parameters.calculoPR, 'GET', 0, somatorio.atualizacaoMonetaria);
             } else {
-                // gerarSublistaAntecipacao(form, 'sublista_resumo_reparcelamento', parameters.renegociacao, arrayParcelas, parameters.reparcelarEm, parameters.vencimentoEntrada, parameters.calculoPR, 'GET', 0, somatorio.atualizacaoMonetaria, parameters.campanhaDesconto);
-                gerarSublistaAntecipacao(form, 'sublista_resumo_reparcelamento', parameters.renegociacao, arrayParcelas, parameters.reparcelarEm, parameters.vencimentoEntrada, parameters.calculoPR, 'GET', 0, somatorio.atualizacaoMonetaria);
+                gerarSublistaAntecipacao(form, 'sublista_resumo_reparcelamento', parameters.renegociacao, arrayParcelas, parameters.reparcelarEm, parameters.vencimentoEntrada, parameters.calculoPR, 'GET', 0, somatorio.atualizacaoMonetaria, parameters.campanhaDesconto);
+                // gerarSublistaAntecipacao(form, 'sublista_resumo_reparcelamento', parameters.renegociacao, arrayParcelas, parameters.reparcelarEm, parameters.vencimentoEntrada, parameters.calculoPR, 'GET', 0, somatorio.atualizacaoMonetaria);
             }
         }
 
@@ -1998,7 +2158,7 @@ const construtor = (method, parameters) => {
             var somatorioParcelas = parameters.somatorioParcelas;
             
             if (parameters.renegociacao == 'Inadimplentes') {
-                gerarSublistaInadimplentes(form, 'sublista_lista_parcelas', parameters.renegociacao, somatorioParcelas, parameters.reparcelarEm, parameters.dataInicio, parameters.vencimentoEntrada, parameters.calculoPR, 'GET');
+                gerarSublistaInadimplentes(form, 'sublista_lista_parcelas', parameters.renegociacao, somatorioParcelas, parameters.reparcelarEm, parameters.dataInicio, parameters.vencimentoEntrada, parameters.calculoPR, 'GET', somatorio.atualizacaoMonetaria);
             } else {
                 gerarSublistaAdimplentes(form, 'sublista_lista_parcelas', parameters.renegociacao, somatorioParcelas, parameters.reparcelarEm, parameters.dataInicio, parameters.vencimentoEntrada, parameters.calculoPR, 'GET');
             }
@@ -2262,7 +2422,7 @@ const construtor = (method, parameters) => {
                     method,
                     JSON.parse(parameters.custpage_rsc_json_reparcelamento), 
                     parameters.custpage_rsc_atualizacao_monetaria,
-                    // JSON.parse(parameters.custpage_rsc_campanha_desconto)
+                    JSON.parse(parameters.custpage_rsc_campanha_desconto)
                 );
             break;
         }
@@ -3561,8 +3721,8 @@ const gerarSublistaAdimplentes = (form, id, nome, arrayParcelas, numeroParcelas,
     }
 }
 
-// const gerarSublistaAntecipacao = (form, id, nome, arrayParcelas, numeroParcelas, primeiroVencimento, calculoPR, method, installmentsSelected, AM, campanhaDesconto) => {
-const gerarSublistaAntecipacao = (form, id, nome, arrayParcelas, numeroParcelas, primeiroVencimento, calculoPR, method, installmentsSelected, AM) => {
+const gerarSublistaAntecipacao = (form, id, nome, arrayParcelas, numeroParcelas, primeiroVencimento, calculoPR, method, installmentsSelected, AM, campanhaDesconto) => {
+// const gerarSublistaAntecipacao = (form, id, nome, arrayParcelas, numeroParcelas, primeiroVencimento, calculoPR, method, installmentsSelected, AM) => {
     log.audit('gerarSublistaAntecipacao', {
         form: form, 
         id: id, 
@@ -3574,8 +3734,8 @@ const gerarSublistaAntecipacao = (form, id, nome, arrayParcelas, numeroParcelas,
         method: method, 
         installmentsSelected: installmentsSelected,
         AM: AM
-        // ,
-        // campanhaDesconto: campanhaDesconto
+        ,
+        campanhaDesconto: campanhaDesconto
     });
 
     // Sublista Resumo do Reparcelamento
@@ -3671,11 +3831,11 @@ const gerarSublistaAntecipacao = (form, id, nome, arrayParcelas, numeroParcelas,
         label: 'Pro Rata'
     });
 
-    // var desconto = sublista.addField({
-    //     id: custPage+'desconto',
-    //     type: serverWidget.FieldType.CURRENCY,
-    //     label: 'Desconto'
-    // });
+    var desconto = sublista.addField({
+        id: custPage+'desconto',
+        type: serverWidget.FieldType.CURRENCY,
+        label: 'Desconto'
+    });
 
     var total = sublista.addField({
         id: custPage+'total',
@@ -3764,17 +3924,17 @@ const gerarSublistaAntecipacao = (form, id, nome, arrayParcelas, numeroParcelas,
                 value: arrayParcelas[i].calculoPR.proRata
             });
 
-            // sublista.setSublistValue({
-            //     id: desconto.id,
-            //     line: i,
-            //     value: campanhaDesconto.desconto
-            // });
+            sublista.setSublistValue({
+                id: desconto.id,
+                line: i,
+                value: campanhaDesconto.desconto
+            });
             
             sublista.setSublistValue({
                 id: total.id,
                 line: i,
-                value: parseFloat(arrayParcelas[i].valorAtualizado) + parseFloat(installmentsSelected) + parseFloat(splitAM)
-                // value: parseFloat(arrayParcelas[i].valorAtualizado) + parseFloat(installmentsSelected) - parseFloat(campanhaDesconto.desconto)
+                // value: parseFloat(arrayParcelas[i].valorAtualizado) + parseFloat(installmentsSelected) + parseFloat(splitAM)
+                value: parseFloat(arrayParcelas[i].valorAtualizado) + parseFloat(installmentsSelected) - parseFloat(campanhaDesconto.desconto)
             });
         }
     } else {
@@ -3829,11 +3989,11 @@ const gerarSublistaAntecipacao = (form, id, nome, arrayParcelas, numeroParcelas,
                 value: arrayParcelas[i].proRata
             });
 
-            // sublista.setSublistValue({
-            //     id: desconto.id,
-            //     line: i,
-            //     value: campanhaDesconto.desconto
-            // });
+            sublista.setSublistValue({
+                id: desconto.id,
+                line: i,
+                value: campanhaDesconto.desconto
+            });
             
             sublista.setSublistValue({
                 id: total.id,
@@ -4003,7 +4163,23 @@ const gerarSublistaRecalculoAtrasos = (form, id, nome, arrayParcelas, numeroParc
         displayType: serverWidget.FieldDisplayType.INLINE
     });
 
-    var splitAM = AM / arrayParcelas.length;
+    parcelas_com_atualizacao_monetaria = [];
+
+    for (amc=0; amc<arrayParcelas.length; amc++) {
+        if (arrayParcelas[amc].atualizacao_monetaria_calculada == true) {
+            parcelas_com_atualizacao_monetaria.push({
+                id_financiamento_invoice: arrayParcelas[amc].id_financiamento_invoice,
+                ultimaAtualizacao: arrayParcelas[amc].ultimaAtualizacao,
+                atualizacao_monetaria_calculada: arrayParcelas[amc].atualizacao_monetaria_calculada,
+                valor: arrayParcelas[amc].valor
+            });
+        }
+    }
+
+    var splitAM = parcelas_com_atualizacao_monetaria.length > 0 ? AM / parcelas_com_atualizacao_monetaria.length : AM;
+    log.audit('parcelas_com_atualizacao_monetaria: '+parcelas_com_atualizacao_monetaria.length, {parcelas_com_atualizacao_monetaria: parcelas_com_atualizacao_monetaria, splitAM: splitAM});
+
+    // var splitAM = AM / arrayParcelas.length;
 
     if (method == 'GET') {
         for (i=0; i<arrayParcelas.length; i++) {
@@ -4044,12 +4220,22 @@ const gerarSublistaRecalculoAtrasos = (form, id, nome, arrayParcelas, numeroParc
                     value: arrayParcelas[i].indice
                 });
             }
-            
+
+            var findPCAM = parcelas_com_atualizacao_monetaria.find(el => el.id_financiamento_invoice === arrayParcelas[i].id_financiamento_invoice);
+            log.audit(i, {findPCAM: findPCAM});
+
             sublista.setSublistValue({
                 id: valorPrincipal.id,
                 line: i,
-                value: parseFloat(arrayParcelas[i].valor) + parseFloat(installmentsSelected)
+                // value: parseFloat(arrayParcelas[i].valor) + parseFloat(installmentsSelected) + parseFloat(splitAM)
+                value: findPCAM ? parseFloat(arrayParcelas[i].valor) + parseFloat(installmentsSelected) + parseFloat(splitAM) : parseFloat(arrayParcelas[i].valor) + parseFloat(installmentsSelected)
             });
+            
+            // sublista.setSublistValue({
+            //     id: valorPrincipal.id,
+            //     line: i,
+            //     value: parseFloat(arrayParcelas[i].valor) + parseFloat(installmentsSelected) + parseFloat(splitAM)
+            // });
 
             sublista.setSublistValue({
                 id: multa.id,
@@ -4078,7 +4264,8 @@ const gerarSublistaRecalculoAtrasos = (form, id, nome, arrayParcelas, numeroParc
             sublista.setSublistValue({
                 id: total.id,
                 line: i,
-                value: parseFloat(arrayParcelas[i].valorAtualizado) + parseFloat(installmentsSelected) + parseFloat(splitAM)
+                // value: parseFloat(arrayParcelas[i].valorAtualizado) + parseFloat(installmentsSelected) + parseFloat(splitAM)
+                value: findPCAM ? parseFloat(arrayParcelas[i].valorAtualizado) + parseFloat(installmentsSelected) + parseFloat(splitAM) : parseFloat(arrayParcelas[i].valorAtualizado) + parseFloat(installmentsSelected)
             });
         }
     } else {
@@ -4138,7 +4325,6 @@ const gerarSublistaRecalculoAtrasos = (form, id, nome, arrayParcelas, numeroParc
                 line: i,
                 value: Number(installmentsSelected[i].juros).toFixed(2)
             });
-
   
             sublista.setSublistValue({
                 id: proRata.id,
@@ -4337,6 +4523,15 @@ const criarTabelaEfetivacaoReparcelamento = (dados) => {
         value: dados.empreendimento
     });
 
+    const lookupJob = search.lookupFields({type: 'job',
+        id: dados.empreendimento,
+        columns: ['custentity_rsc_juros','custentity_rsc_multa']
+    });
+    log.audit('lookupJob', lookupJob);
+
+    var custentity_rsc_juros = lookupJob.custentity_rsc_juros.replace('%','') / 100; // a.a
+    var custentity_rsc_multa = lookupJob.custentity_rsc_multa.replace('%','') / 100;  
+
     tabelaEfetivacao.setValue({
         fieldId: 'custrecord_rsc_observacao_memo',
         value: dados.renegociacao
@@ -4450,7 +4645,8 @@ const criarTabelaEfetivacaoReparcelamento = (dados) => {
 
             tabelaEfetivacao.setValue({
                 fieldId: 'custrecord_rsc_valor_total',
-                value: Number(dados.total_fatura_principal - dadosRenegociacao[0].total)
+                // value: Math.abs(dados.total_fatura_principal - dadosRenegociacao[0].total)
+                value: Number(Math.abs(dados.total_fatura_principal - dadosRenegociacao[0].total))
             });
 
             tabelaEfetivacao.setValue({
@@ -4653,7 +4849,8 @@ const criarTabelaEfetivacaoReparcelamento = (dados) => {
 
             tabelaEfetivacao.setValue({
                 fieldId: 'custrecord_rsc_valor_total',
-                value: dados.total_fatura_principal - total_prestacoes_marcadas
+                // value: dados.total_fatura_principal - total_prestacoes_marcadas
+                value: Math.abs(dados.total_fatura_principal - total_prestacoes_marcadas)
             });
         
             for (i=0; i<dadosReparcelamento.length; i++) {
@@ -4749,6 +4946,15 @@ const criarTabelaEfetivacaoReparcelamento = (dados) => {
             });
 
             var pro_rata_inadimplente = 0;
+            var jurosAntes = 0;
+            var multaAntes = 0;
+
+            /**ESTE LOOP É NECESSÁRIO PARA PEGAR OS VALORES DE JUROS/MULTA NA DATA DA RENEGOCIAÇÃO E DIVIDÍ-LO NO NOVO FLUXO DE PAGAMENTOS. */
+            for (jm=0; jm<dadosReparcelamento.length; jm++) {
+                multaAntes = parseFloat(multaAntes) + parseFloat(dadosReparcelamento[jm].multaAntes);
+                jurosAntes = parseFloat(jurosAntes) + parseFloat(dadosReparcelamento[jm].jurosAntes);
+            }
+            log.audit('multa/juros antes', {multaAntes: multaAntes, jurosAntes: jurosAntes});
 
             for (i=0; i<dadosRenegociacao.length; i++) {
                 pro_rata_inadimplente = parseFloat(pro_rata_inadimplente) + parseFloat(dadosRenegociacao[i].proRata);
@@ -4853,7 +5059,8 @@ const criarTabelaEfetivacaoReparcelamento = (dados) => {
                     tabelaEfetivacao.setCurrentSublistValue({
                         sublistId: 'recmachcustrecord_rsc_resumo_reparcelamento',
                         fieldId: 'custrecord_rsc_prestacao',
-                        value: parseFloat(dadosRenegociacao[i].valorAtualizado) + parseFloat(jurosCompostos - dadosRenegociacao[i].valorAtualizado)
+                        value: parseFloat(dadosRenegociacao[i].valorAtualizado) + parseFloat(jurosCompostos - dadosRenegociacao[i].valorAtualizado),
+                        // value: parseFloat(dadosRenegociacao[i].valorAtualizado) + parseFloat(jurosCompostos - dadosRenegociacao[i].valorAtualizado) - (parseFloat(jurosAntes) + parseFloat(multaAntes))
                     });
                 } else {
                     tabelaEfetivacao.setCurrentSublistValue({
@@ -4888,12 +5095,14 @@ const criarTabelaEfetivacaoReparcelamento = (dados) => {
                     sublistId: 'recmachcustrecord_rsc_resumo_reparcelamento',
                     fieldId: 'custrecord_rsc_multa_reneg',
                     value: dadosRenegociacao[i].multa
+                    // value: multaAntes / dadosRenegociacao.length
                 });
 
                 tabelaEfetivacao.setCurrentSublistValue({
                     sublistId: 'recmachcustrecord_rsc_resumo_reparcelamento',
                     fieldId: 'custrecord_rsc_juros_reneg',
-                    value: dadosRenegociacao[i].juros || ZERO
+                    value: dadosRenegociacao[i].juros
+                    // value: jurosAntes / dadosRenegociacao.length
                 });
         
                 tabelaEfetivacao.commitLine({
@@ -4908,7 +5117,8 @@ const criarTabelaEfetivacaoReparcelamento = (dados) => {
 
             tabelaEfetivacao.setValue({
                 fieldId: 'custrecord_rsc_valor_total',
-                value: dados.total_fatura_principal - total_prestacoes_marcadas
+                // value: dados.total_fatura_principal - total_prestacoes_marcadas
+                value: Math.abs(dados.total_fatura_principal - total_prestacoes_marcadas)
             });
 
             var proRataTotal = 0;
@@ -4959,19 +5169,24 @@ const criarTabelaEfetivacaoReparcelamento = (dados) => {
                 tabelaEfetivacao.setCurrentSublistValue({
                     sublistId: 'recmachcustrecord_rsc_resumo',
                     fieldId: 'custrecord_rsc_valor_parcela',
-                    value: parseFloat(dadosReparcelamento[i].valor) + parseFloat(dados.atualizacaoMonetaria) 
+                    // value: parseFloat(dadosReparcelamento[i].valor) + parseFloat(dados.atualizacaoMonetaria) 
+                    value: parseFloat(dadosReparcelamento[i].valorD2)
                 });
         
                 tabelaEfetivacao.setCurrentSublistValue({
                     sublistId: 'recmachcustrecord_rsc_resumo',
                     fieldId: 'custrecord_rsc_multa_parcela',
-                    value: Number(dadosReparcelamento[i].multaAntes) || 0
+                    // value: Number(dadosReparcelamento[i].multaAntes) || 0
+                    // value: Number(dadosReparcelamento[i].multa) || 0
+                    value: Number(dadosReparcelamento[i].valorD2 * custentity_rsc_multa)
                 });
         
                 tabelaEfetivacao.setCurrentSublistValue({
                     sublistId: 'recmachcustrecord_rsc_resumo',
                     fieldId: 'custrecord_rsc_juros_parcela',
-                    value: Number(dadosReparcelamento[i].jurosAntes) || 0
+                    // value: Number(dadosReparcelamento[i].jurosAntes) || 0
+                    // value: Number(dadosReparcelamento[i].juros) || 0
+                    value: Number(dadosReparcelamento[i].jurosD2) || 0
                 });
 
                 tabelaEfetivacao.setCurrentSublistValue({
@@ -4983,7 +5198,10 @@ const criarTabelaEfetivacaoReparcelamento = (dados) => {
                 tabelaEfetivacao.setCurrentSublistValue({
                     sublistId: 'recmachcustrecord_rsc_resumo',
                     fieldId: 'custrecord_rsc_valor_atualizado_parcela',
-                    value: parseFloat(dadosReparcelamento[i].valorAtualizadoAntes) + parseFloat(dadosReparcelamento[i].calculoPR.proRata) + parseFloat(dados.atualizacaoMonetaria)
+                    // value: parseFloat(dadosReparcelamento[i].valorAtualizadoAntes) + parseFloat(dadosReparcelamento[i].calculoPR.proRata) + parseFloat(dados.atualizacaoMonetaria)
+                    // value: parseFloat(dadosReparcelamento[0].valor) + parseFloat(dados.atualizacaoMonetaria / dadosReparcelamento.length) + parseFloat(dadosReparcelamento[0].multa) + parseFloat(dadosReparcelamento[0].juros) + 
+                    // parseFloat(dadosReparcelamento[0].calculoPR.proRata)
+                    value: parseFloat(dadosReparcelamento[i].valorD2) + parseFloat(dadosReparcelamento[i].valorD2 * custentity_rsc_multa) + parseFloat(dadosReparcelamento[i].jurosD2)
                 });
         
                 tabelaEfetivacao.commitLine({
@@ -5165,7 +5383,8 @@ const criarTabelaEfetivacaoReparcelamento = (dados) => {
 
             tabelaEfetivacao.setValue({
                 fieldId: 'custrecord_rsc_valor_total',
-                value: dados.total_fatura_principal - total_prestacoes_marcadas
+                // value: dados.total_fatura_principal - total_prestacoes_marcadas
+                value: Math.abs(dados.total_fatura_principal - total_prestacoes_marcadas)
             });
 
             var proRataTotal = 0;
@@ -5216,7 +5435,8 @@ const criarTabelaEfetivacaoReparcelamento = (dados) => {
                 tabelaEfetivacao.setCurrentSublistValue({
                     sublistId: 'recmachcustrecord_rsc_resumo',
                     fieldId: 'custrecord_rsc_valor_parcela',
-                    value: parseFloat(dadosReparcelamento[i].valor) + parseFloat(dados.atualizacaoMonetaria) 
+                    // value: parseFloat(dadosReparcelamento[i].valor) + parseFloat(dados.atualizacaoMonetaria) 
+                    value: parseFloat(dadosReparcelamento[i].valorD2)
                 });
         
                 tabelaEfetivacao.setCurrentSublistValue({
@@ -5267,7 +5487,8 @@ const criarTabelaEfetivacaoReparcelamento = (dados) => {
 
             tabelaEfetivacao.setValue({
                 fieldId: 'custrecord_rsc_valor_total',
-                value: Number(dados.total_fatura_principal - dadosRenegociacao[0].total)
+                // value: Number(dados.total_fatura_principal - dadosRenegociacao[0].total)
+                value: Number(Math.abs(dados.total_fatura_principal - dadosRenegociacao[0].total))
             });
 
             tabelaEfetivacao.setValue({
@@ -5383,7 +5604,8 @@ const criarTabelaEfetivacaoReparcelamento = (dados) => {
 
             tabelaEfetivacao.setValue({
                 fieldId: 'custrecord_rsc_valor_total',
-                value: dados.total_fatura_principal - total_prestacoes_marcadas
+                // value: dados.total_fatura_principal - total_prestacoes_marcadas
+                value: Math.abs(dados.total_fatura_principal - total_prestacoes_marcadas)
             });
         
             for (i=0; i<dadosReparcelamento.length; i++) {
@@ -5430,7 +5652,8 @@ const criarTabelaEfetivacaoReparcelamento = (dados) => {
                 tabelaEfetivacao.setCurrentSublistValue({
                     sublistId: 'recmachcustrecord_rsc_resumo',
                     fieldId: 'custrecord_rsc_valor_parcela',
-                    value: parseFloat(dadosReparcelamento[i].valor) + parseFloat(dados.atualizacaoMonetaria)
+                    // value: parseFloat(dadosReparcelamento[i].valor) + parseFloat(dados.atualizacaoMonetaria)
+                    value: parseFloat(dadosReparcelamento[i].valorD2)
                 });
         
                 tabelaEfetivacao.setCurrentSublistValue({
@@ -5481,7 +5704,8 @@ const criarTabelaEfetivacaoReparcelamento = (dados) => {
 
             tabelaEfetivacao.setValue({
                 fieldId: 'custrecord_rsc_valor_total',
-                value: Number(dados.total_fatura_principal - dadosRenegociacao[0].total)
+                // value: Math.abs(dados.total_fatura_principal - dadosRenegociacao[0].total)
+                value: Number(Math.abs(dados.total_fatura_principal - dadosRenegociacao[0].total))
             });
 
             tabelaEfetivacao.setValue({
@@ -5589,7 +5813,8 @@ const criarTabelaEfetivacaoReparcelamento = (dados) => {
 
             tabelaEfetivacao.setValue({
                 fieldId: 'custrecord_rsc_valor_total',
-                value: dados.total_fatura_principal - total_prestacoes_marcadas
+                // value: dados.total_fatura_principal - total_prestacoes_marcadas
+                value: Math.abs(dados.total_fatura_principal - total_prestacoes_marcadas)
             });
         
             for (i=0; i<dadosReparcelamento.length; i++) {
@@ -5636,7 +5861,8 @@ const criarTabelaEfetivacaoReparcelamento = (dados) => {
                 tabelaEfetivacao.setCurrentSublistValue({
                     sublistId: 'recmachcustrecord_rsc_resumo',
                     fieldId: 'custrecord_rsc_valor_parcela',
-                    value: parseFloat(dadosReparcelamento[i].valor) + parseFloat(dados.atualizacaoMonetaria)
+                    // value: parseFloat(dadosReparcelamento[i].valor) + parseFloat(dados.atualizacaoMonetaria)
+                    value: parseFloat(dadosReparcelamento[i].valorD2)
                 });
         
                 tabelaEfetivacao.setCurrentSublistValue({
@@ -5678,6 +5904,12 @@ const criarTabelaEfetivacaoReparcelamento = (dados) => {
     tabelaEfetivacao.setValue({
         fieldId: 'custrecord_rsc_status_ter',
         value: 1
+    });
+
+    // Atualização Monetária
+    tabelaEfetivacao.setValue({
+        fieldId: 'custrecord_rsc_atualizacao_monetaria',
+        value: parseFloat(dados.atualizacaoMonetaria)
     });
 
     var idTabelaEfetivacao, erro;

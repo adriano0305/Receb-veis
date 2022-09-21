@@ -4,7 +4,7 @@
  * @author Adriano Barbosa
  * @since 2021.3
  */
-define(['N/log', 'N/query'], function(log, query) {
+define(['N/log', 'N/query', 'N/search'], function(log, query, search) {
 function lkpFI(id) {
     var sql = "SELECT custbody_rsc_ultima_atualizacao "+
     "FROM transaction "+
@@ -54,6 +54,26 @@ function fatorCorrecao(status, indice, dataInicio, dataFim) {
     return sqlResults;
 }
 
+function historicoFator(indices) {
+    log.audit('historicoFator', {indices: indices});    
+
+    var sql = "SELECT fh.id, fh.custrecord_rsc_hif_correction_unit, fh.custrecord_rsc_hif_effective_date, fh.custrecord_rsc_hif_factor_percent, "+
+    "FROM customrecord_rsc_factor_history AS fh "+
+    "WHERE fh.custrecord_rsc_hif_correction_unit IN " + "(" + indices.join() + ")";
+    // log.audit('sql', sql);
+
+    var consulta = query.runSuiteQL({
+        query: sql,
+        // params: indices.join(',')
+    });
+
+    var sqlResults = consulta.asMappedResults();
+    // console.log('sqlResults fatorCorrecao', JSON.stringify(sqlResults));
+    log.audit('sqlResults historicoFator', sqlResults);
+
+    return sqlResults;
+}
+
 function job(empreendimento) {
     var sql = "SELECT id, entityid, custentity_rsc_juros, custentity_rsc_multa "+
     "FROM job "+
@@ -97,6 +117,7 @@ function juros_e_acrescimos_moratorios(id, item) {
 }
 
 return {
+    historicoFator: historicoFator,
     juros_e_acrescimos_moratorios: juros_e_acrescimos_moratorios,
     job: job,
     fatorCorrecao: fatorCorrecao,

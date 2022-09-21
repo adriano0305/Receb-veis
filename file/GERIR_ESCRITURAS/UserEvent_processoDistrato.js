@@ -25,33 +25,29 @@ define(["require", "exports", "N/log", "N/record", "./ClientScript_fluxoEscritur
             var subsidiary = newRecord.getValue('subsidiary');
             if (tipo_contrato == 3) {
                 if (controle_escrituracao) {
-                    // const faturaSearchResult = Search.lookupFields({
-                    //     type: 'invoice',
-                    //     id: invoiceId,
-                    //     columns: [
-                    //         'custbody_lrc_fat_controle_escrituracao',
-                    //         'subsidiary'
-                    //     ]
-                    // }) as any;
-                    // Log.error('faturaSearchResult', faturaSearchResult);
                     var controleEscrituracaoRecord = record_1.default.load({
                         type: 'customrecord_lrc_controle_escrituracao',
                         id: controle_escrituracao
                     });
-                    log_1.default.error('controle_id', controle_escrituracao);
-                    var jsonFaturaDados = {
-                        tipoEscrituracao: 0,
-                        novaDataInicio: 0,
-                        novaDataPlanejadaEntrega: 0,
-                        controleEscrituracaoId: controleEscrituracaoRecord.getValue('id'),
-                        statusAtualEscrituracaoId: controleEscrituracaoRecord.getValue('custrecord_lrc_status_escrituracao'),
-                        newStatusId: 25,
-                        escrituraEncerrada: true,
-                        subsidiaria: subsidiary,
-                        baixaAlienacao: 0
-                    };
-                    log_1.default.error('processo distrato', jsonFaturaDados);
-                    ClientScript_fluxoEscritura_1.changeDeedControlStatus(jsonFaturaDados);
+                    var status = controleEscrituracaoRecord.getValue('custrecord_lrc_status_escrituracao');
+                    // Se o status for "Unidade Distratada" significa que o processo foi realizado.
+                    if (status != 25) {
+                        var jsonFaturaDados = {
+                            tipoEscrituracao: 0,
+                            novaDataInicio: 0,
+                            novaDataPlanejadaEntrega: 0,
+                            controleEscrituracaoId: controleEscrituracaoRecord.getValue('id'),
+                            statusAtualEscrituracaoId: controleEscrituracaoRecord.getValue('custrecord_lrc_status_escrituracao'),
+                            newStatusId: 25,
+                            escrituraEncerrada: true,
+                            subsidiaria: subsidiary,
+                            baixaAlienacao: 0
+                        };
+                        ClientScript_fluxoEscritura_1.changeDeedControlStatus(jsonFaturaDados);
+                        log_1.default.audit('afterSubmit', {controle_escrituracao: controle_escrituracao, status: status});
+                    } else {
+                        log_1.default.audit('afterSubmit', {controle_escrituracao: controle_escrituracao, status: {value: status, text: 'Unidade Distratada'}});
+                    }
                 }
             }
         }

@@ -5,6 +5,11 @@
 
 const ZERO = Number('0').toFixed(2);
 
+const opcoes = {
+    enableSoucing: true,
+    ignoreMandatoryFields: true
+}
+
 define(['N/https', 'N/log', 'N/record', 'N/search', 'N/url'], (https, log, record, search, url) => {
 const formatData = (data) => {
     var partesData = data.split("/");
@@ -249,9 +254,67 @@ const aplicarBoleto = (idBoleto) => {
     }
 }
 
+const atualizarRegistroPersonalizado = (idInterno) => {
+    log.audit('atualizarRegistroPersonalizado', {idInterno: idInterno});
+
+    const loadRP = record.load({type: 'customrecord_rsc_tab_efetiva_reparcela', id: idInterno});
+
+    var tipoRenegociacao = loadRP.getValue('custrecord_rsc_tipo_renegociacao');
+    var total_recmachcustrecord_rsc_resumo = loadRP.getLineCount('recmachcustrecord_rsc_resumo');
+
+    // Inadimplentes
+    if (tipoRenegociacao == 4) {
+        for (i=0; i<total_recmachcustrecord_rsc_resumo; i++) {
+            var parcelaContrato = loadRP.getSublistValue('recmachcustrecord_rsc_resumo', 'custrecord_rsc_parcela_contrato', i);
+            if (parcelaContrato) {
+                var itensRemovidos = {
+                    parcelaContrato: parcelaContrato,
+                    itens: []
+                }
+
+                var loadPC = record.load({type: 'invoice', id: parcelaContrato, isDynamic: true});                
+
+                for (n=loadPC.getLineCount('item')-1; n>=0; n--) {
+                    loadPC.selectLine('item', n);
+                    var item = loadPC.getCurrentSublistValue('item', 'item');
+
+                    // INCC, IGP-M, INPC e ACRÉSCIMO SOBRE FINANCIAMENTO
+                    if (item == 28651 || item == 28652 || item == 31347 || item == 30694) {
+                        itensRemovidos.itens.push(item);
+                        loadPC.removeLine('item', n);
+                    }
+                }
+
+                if (itensRemovidos.itens.length > 0) {
+                    log.audit('Itens removidos!', {reneg: idInterno, recmachcustrecord_rsc_resumo: i, itens: itensRemovidos});
+                    loadPC.save(opcoes);
+                }                
+            }            
+        }
+        
+        // Rejeitado
+        loadRP.setValue('custrecord_rsc_status_aprovacao', 3) 
+        .save(opcoes);
+    }    
+}
+
 const beforeLoad = (context) => {}
 
-const beforeSubmit = (context) => {}
+const beforeSubmit = (context) => {
+    log.audit('afterSubmit', context);
+
+    const novoRegistro = context.newRecord;
+
+    const tipo = context.type;
+
+    if (tipo == 'delete') {
+        var numeroRenegociacao = novoRegistro.getValue('custbody_rsc_numero_renegociacao');
+
+        if (numeroRenegociacao) {
+            atualizarRegistroPersonalizado(numeroRenegociacao);
+        }
+    }
+}
 
 const afterSubmit = (context) => {
     log.audit('afterSubmit', context);

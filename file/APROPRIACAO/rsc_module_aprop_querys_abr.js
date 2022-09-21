@@ -234,7 +234,8 @@ define(['N/file', 'N/query'],
                     _loadAllValues();
                     var sql = 'select substr(subsidiary.name,1,4) subsidiary, job.id, custentity_rsc_term_cl_suspensiva inicioApropriacao, ' +
                         ' ' + getComponentes(idOperacao, period) + ' from subsidiary, job\n' +
-                        'where job.custentity_rsc_aprop_subsidiaria = subsidiary.id and job.id in (21922) order by 1';  
+                        // 'where 1 = subsidiary.custrecordtpemp and job.custentity_rsc_aprop_subsidiaria = subsidiary.id order by 1';
+                        'where 1 = subsidiary.custrecordtpemp and job.custentity_rsc_aprop_subsidiaria = subsidiary.id and job.id in (21906,21910,21922,21952) order by 1'
 
                          // 74 PARQUE ECOVILLE F4 - BARIGUI
                         // 'where 1 = subsidiary.custrecordtpemp and job.custentity_rsc_aprop_subsidiaria = subsidiary.id and job.id in (21922) order by 1';
