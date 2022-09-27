@@ -233,7 +233,8 @@ define(['N/file', 'N/ui/serverWidget', 'N/query', 'N/record', 'N/task', 'N/ui/me
                     sql += ' , ' + sqlValores  + header['custrecord_rsc_fatores_operacao'] + ' ';
                 }
             sql += 'from subsidiary, job  ' +
-            '                    where job.custentity_rsc_aprop_subsidiaria = subsidiary.id and job.id in (21922) order by 1';
+            //  '                    where 1 = subsidiary.custrecordtpemp and job.custentity_rsc_aprop_subsidiaria = subsidiary.id order by 1';
+            '                    where 1 = subsidiary.custrecordtpemp and job.custentity_rsc_aprop_subsidiaria = subsidiary.id and job.id in (21906,21910,21922,21952) order by 1';
                 // '                    where 1 = subsidiary.custrecordtpemp and job.custentity_rsc_aprop_subsidiaria = subsidiary.id order by 1';
                 // '                    where 1 = subsidiary.custrecordtpemp and job.custentity_rsc_aprop_subsidiaria = subsidiary.id and job.id in (21922) order by 1';
             log.debug({title: 'Sql completo ', details : sql});

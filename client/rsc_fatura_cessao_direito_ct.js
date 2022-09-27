@@ -372,8 +372,7 @@ const retornarContrato = () => {
 
 const implantacao = () => {
     const registroAtual = currentRecord.get();
-
-    const statusCessao = registroAtual.getValue('custrecord_rsc_status_cessao');
+    console.log(JSON.stringify(registroAtual));
     
     var arrayParcelas = [];
 
@@ -388,6 +387,9 @@ const implantacao = () => {
             ]
         }).run().getRange(0,1);
         console.log('bscCD', JSON.stringify(bscCD));
+
+        const statusCessao = bscCD[0].getValue('custrecord_rsc_status_cessao');
+        console.log('statusCessao: '+statusCessao);
 
         if (bscCD[0].getValue('custrecord_rsc_status_cessao') == 1) {
             if (bscCD[0].getValue('custrecord_rsc_taxa_cd')) {
@@ -464,11 +466,15 @@ const implantacao = () => {
             custrecord_rsc_perc_juros: bscCD[0].getValue('custrecord_rsc_perc_juros').replace('%', ''),
             custrecord_rsc_perc_multa: bscCD[0].getValue('custrecord_rsc_perc_multa').replace('%', ''),
             recmachcustrecord_rsc_transferencia_posse: arrayParcelas,
-            customrecord_rsc_cd_novos_proponentes: arrayProponentes
+            customrecord_rsc_cd_novos_proponentes: arrayProponentes,
+            custbody_rsc_status_contrato: 4 // Transferido
         }
         console.log('json', JSON.stringify(json));
 
-        if (bscCD[0].getValue('custrecord_rsc_perc_cessao_direito').replace('%', '') > 0) {
+        var perc_cessao_direito = bscCD[0].getValue('custrecord_rsc_perc_cessao_direito').replace('%', '');
+        console.log('perc_cessao_direito:' +perc_cessao_direito);
+
+        if (perc_cessao_direito > 0) {
             var mensagem = 'Taxa Cessão Direito: '+
             (bscCD[0].getValue('custrecord_rsc_novo_valor_cd') > 0 ? bscCD[0].getValue('custrecord_rsc_novo_valor_cd') : bscCD[0].getValue('custrecord_rsc_calculo'))+
             '\n Confirma?';
@@ -511,6 +517,13 @@ const implantacao = () => {
             } else {
                 return false;
             }
+        } else {
+            dialog.alert({
+                title: 'Aviso!',
+                message: 'Campo "% CESSÃO DE DIREITO" não preenchido. \n Verifique o % no cadastro do empreendimento.'
+            });
+
+            return false;
         }
     }
 }
@@ -526,7 +539,11 @@ const enviarCessao = (ordem) => {
 
     const statusCessao = loadReg.getValue('custrecord_rsc_status_cessao');
     const dataCD = loadReg.getValue('custrecord_rsc_data_criacao_cd');
-    const criadorCD = loadReg.getText('custrecord_rsc_criador_cd');
+    
+    const criadorCD = {
+        value: loadReg.getValue('custrecord_rsc_criador_cd'),
+        text: loadReg.getText('custrecord_rsc_criador_cd')
+    };
 
     const contrato = {
         text: loadReg.getText('custrecord_rsc_contrato'),
@@ -630,7 +647,7 @@ const enviarCessao = (ordem) => {
         });
         console.log(urlExterna, urlExterna);
 
-        var response = https.post({ // RSC Fatura Cessão Direito ST
+        var response = https.post({ // RSC Template Cessão Direito ST
             url: urlExterna,
             body: JSON.stringify(json)
         });
@@ -653,14 +670,14 @@ const enviarCessao = (ordem) => {
         } else {
             dialog.alert({
                 title: 'Aviso!',
-                message: 'Erro no processamento da solicitação.'
+                message: 'Erro no processamento da solicitação. \n Atualize a tela e verifique o campo "ERRO % CESSÃO DIREITO".'
             }); 
         }
     } catch (e) {
         console.log('Erro ao enviar cessão: '+e);
         dialog.alert({
             title: 'Aviso!',
-            message: 'Erro ao enviar cessão: '+'\n'+e.message
+            message: 'Erro ao enviar cessão. \n Atualize a tela e verifique o campo "ERRO % CESSÃO DIREITO".'
         });
     }
 }

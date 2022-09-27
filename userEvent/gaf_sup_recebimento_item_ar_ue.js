@@ -1,5 +1,5 @@
 /**
- *@NApiVersion 2.x
+ *@NApiVersion 2.1
 *@NScriptType UserEventScript
 */
 define(['N/log', 'N/record'], function(log, record) {

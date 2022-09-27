@@ -9,7 +9,7 @@
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-define(["require", "exports", "N/ui/serverWidget", "N/record", "N/search", "N/log", "N/runtime", "./ClientScript_fluxoEscritura"], function (require, exports, serverWidget_1, record_1, search_1, log_1, runtime_1, ClientScript_fluxoEscritura_1) {
+define(["require", "exports", "N/ui/serverWidget", "N/record", "N/search", "N/log", "N/runtime", "N/ui/message", "./ClientScript_fluxoEscritura"], function (require, exports, serverWidget_1, record_1, search_1, log_1, runtime_1, message, ClientScript_fluxoEscritura_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.beforeLoad = void 0;
@@ -18,6 +18,7 @@ define(["require", "exports", "N/ui/serverWidget", "N/record", "N/search", "N/lo
     search_1 = __importDefault(search_1);
     log_1 = __importDefault(log_1);
     runtime_1 = __importDefault(runtime_1);
+    // message = __importDefault(message);
     var beforeLoad = function (ctx) {
         var x = search_1.default.create({
             type: 'salesorder',
@@ -69,27 +70,66 @@ define(["require", "exports", "N/ui/serverWidget", "N/record", "N/search", "N/lo
                     subsidiaria: subsidiariaFaturaId,
                     baixaAlienacao: 0
                 };
-                var allowedRoles = recordParametrizacoes.getValue('custrecord_lrc_funcao');
+                // var allowedRoles = recordParametrizacoes.getValue('custrecord_lrc_funcao');
+                // var currentUser = runtime_1.default.getCurrentUser();
+                // // O botão "Reinicio Processo" deve aparecer somente para os usuarios parametrizados no registro
+                // if (allowedRoles.indexOf(currentUser.role.toString()) >= 0) {
+                //     var tipoEscrituracao = controleEscrituracao.getValue('custrecord_lrc_tipo_escrituracao');
+                //     jsonFaturaDados.tipoEscrituracao = 0;
+                //     jsonFaturaDados.statusAtualEscrituracaoId = statusAtualEscrituracaoId;
+                //     jsonFaturaDados.controleEscrituracaoId = controleEscrituracaoId;
+                //     var newStatusId = 0;
+                //     if (tipoEscrituracao == 1) {
+                //         newStatusId = 1;
+                //     }
+                //     else if (tipoEscrituracao == 2) {
+                //         newStatusId = 14;
+                //     }
+                //     faturaForm.addButton({
+                //         label: 'Reinicio Processo',
+                //         id: 'custpage_btn_reinicio_processo',
+                //         functionName: 'callChangeDeedControlStatus( ' + newStatusId + ', ' + 'true' + ')'
+                //     });
+                // }
+                var allowedRoles = recordParametrizacoes;
+                log_1.default.debug('allowedRoles', allowedRoles);
                 var currentUser = runtime_1.default.getCurrentUser();
                 // O botão "Reinicio Processo" deve aparecer somente para os usuarios parametrizados no registro
-                if (allowedRoles.indexOf(currentUser.role.toString()) >= 0) {
-                    var tipoEscrituracao = controleEscrituracao.getValue('custrecord_lrc_tipo_escrituracao');
-                    jsonFaturaDados.tipoEscrituracao = 0;
-                    jsonFaturaDados.statusAtualEscrituracaoId = statusAtualEscrituracaoId;
-                    jsonFaturaDados.controleEscrituracaoId = controleEscrituracaoId;
-                    var newStatusId = 0;
-                    if (tipoEscrituracao == 1) {
-                        newStatusId = 1;
+                if (allowedRoles != false) {
+                    var funcao = allowedRoles.getValue('custrecord_lrc_funcao');
+                    if (funcao.indexOf(currentUser.role.toString()) >= 0) {
+                        var tipoEscrituracao = controleEscrituracao.getValue('custrecord_lrc_tipo_escrituracao');
+                        jsonFaturaDados.tipoEscrituracao = 0;
+                        jsonFaturaDados.statusAtualEscrituracaoId = statusAtualEscrituracaoId;
+                        jsonFaturaDados.controleEscrituracaoId = controleEscrituracaoId;
+                        var newStatusId = 0;
+                        if (tipoEscrituracao == 1) {
+                            newStatusId = 1;
+                        }
+                        else if (tipoEscrituracao == 2) {
+                            newStatusId = 14;
+                        }
+                        faturaForm.addButton({
+                            label: 'Reinicio Processo',
+                            id: 'custpage_btn_reinicio_processo',
+                            functionName: 'callChangeDeedControlStatus( ' + newStatusId + ', ' + 'true' + ')'
+                        });
                     }
-                    else if (tipoEscrituracao == 2) {
-                        newStatusId = 14;
-                    }
-                    faturaForm.addButton({
-                        label: 'Reinicio Processo',
-                        id: 'custpage_btn_reinicio_processo',
-                        functionName: 'callChangeDeedControlStatus( ' + newStatusId + ', ' + 'true' + ')'
+                } else {
+                    log_1.default.debug('message_1', 'message_1');
+                    var aviso = message.create({
+                        type: message.Type.ERROR,
+                        title: 'Controle de Escrituração',
+                        message: 'Não foram encontradas parametrizações para a subsidiária: ' + faturaRecord.getText('subsidiary') + '. <br>'+
+                        'Para incluir os parâmetros <a href="https://5843489-sb2.app.netsuite.com/app/common/custom/custrecordentry.nl?rectype=270">clique aqui.</a>',
+                        duration: 15000
                     });
-                }
+                    // Instancia o mensagem criada para o formulário.
+                    faturaForm.addPageInitMessage({message: aviso});
+
+                    var botaoEditar = faturaForm.getButton({id: 'edit'});
+                    botaoEditar.isDisabled = true;
+                }          
                 // 1.01 ou 1.03 - Aguardando Individualização de Matrícula
                 if (statusAtualEscrituracaoId === '1' || statusAtualEscrituracaoId === '3') {
                     var projetoObraId = faturaRecord.getValue('custbody_rsc_projeto_obra_gasto_compra');

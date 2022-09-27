@@ -27,6 +27,16 @@ const itensAdicionais = {
     quantity: 1
 }
 
+var popup = 'height=' + 400 + ' , width=' + 450;
+popup += ' , left=' + 300 + ", top=" + 250;
+popup += ', status=no'; 
+popup += ' ,toolbar=no';
+popup += ' ,menubar=no';
+popup += ', resizable=yes'; 
+popup += ' ,scrollbars=no';
+popup += ' ,location=no';
+popup += ' ,directories=no';
+
 define(['N/currentRecord', 'N/email', 'N/https', 'N/record', 'N/runtime', 'N/search', 'N/ui/dialog', 'N/transaction', 'N/url'], (currentRecord, email, https, record, runtime, search, dialog, transaction, url) => {
 const urlTransacao = (dados) => {
     return url.resolveRecord({
@@ -139,6 +149,7 @@ const enviarMinutaBoleto = (ordem) => {
     const empreendimento = loadReg.getText('custrecord_rsc_empreedimento');
     const unidade = loadReg.getText('custrecord_rsc_unidade');
     const indice = search.lookupFields({type: 'salesorder', id: contrato_fatura_principal.value, columns: 'custbody_rsc_indice'}).custbody_rsc_indice;
+    const vencimentoEntrada = loadReg.getText('custrecord_rsc_vencimento_da_entrada');
     const total_fatura_principal = Number(loadReg.getValue('custrecord_rsc_total_fatura_principal')).toFixed(2);
     const primeiroVencimento = loadReg.getText('custrecord_rsc_primeiro_vencimento');
     const juros = loadReg.getValue('custrecord_rsc_juros_de_mora');
@@ -210,6 +221,7 @@ const enviarMinutaBoleto = (ordem) => {
         unidade: unidade,
         indice: indice,
         total_fatura_principal: total_fatura_principal,
+        vencimentoEntrada: vencimentoEntrada,
         primeiroVencimento: primeiroVencimento,
         juros: juros,
         observacao: observacao,
@@ -281,8 +293,9 @@ const implantacao = () => {
         ],
         columns: [
             "custrecord_rsc_data_renegociacao","custrecord_rsc_status_aprovacao","custrecord_rsc_contrato_fatura_principal","custrecord_rsc_cliente","custrecord_rsc_total_prestacoes_marcadas",
-            "custrecord_rsc_unidade","custrecord_rsc_reparcelamento_2","custrecord_rsc_valor_financiado","custrecord_rsc_total_prestacoes_marcadas","custrecord_rsc_valor_total","custrecord_rsc_valor_da_entrada",
-            "custrecord_rsc_vencimento_da_entrada","custrecord_rsc_tipo_renegociacao","custrecord_rsc_novo_valor","custrecord_rsc_novo_vencimento","custrecord_rsc_criador_ter","custrecord_rsc_boleto"
+            "custrecord_rsc_atualizacao_monetaria","custrecord_rsc_unidade","custrecord_rsc_reparcelamento_2","custrecord_rsc_valor_financiado","custrecord_rsc_total_prestacoes_marcadas",
+            "custrecord_rsc_valor_total","custrecord_rsc_valor_da_entrada","custrecord_rsc_vencimento_da_entrada","custrecord_rsc_tipo_renegociacao","custrecord_rsc_novo_valor","custrecord_rsc_novo_vencimento",
+            "custrecord_rsc_criador_ter","custrecord_rsc_boleto"
         ]
     }).run().getRange(0,1);
     console.log('bscTabelaEfetivacao: '+JSON.stringify(bscTabelaEfetivacao));
@@ -692,14 +705,14 @@ const aprovar = () => {
             } else {
                 dialog.alert({
                     title: 'Aviso!',
-                    message: 'Houve um erro no processamento da solicitação.'
+                    message: 'Houve um erro no processamento da solicitação. Verifique o campo "Erro Renegociação".'
                 });
             }  
         } else {
             console.log('Erro', JSON.stringify({code: response.code, body: response.body}));
             dialog.alert({
                 title: 'Aviso',
-                message: 'Erro ao aprovar renegociação.'
+                message: 'Erro ao aprovar renegociação. Verifique o campo "Erro Renegociação".'
             });
         }  
 
@@ -722,215 +735,428 @@ const aprovar = () => {
 const baixaManual = () => {
     const registroAtual = currentRecord.get();
 
-    var bscTabelaEfetivacao = search.create({type: "customrecord_rsc_tab_efetiva_reparcela",
-        filters: [
-            ["internalid","anyof",registroAtual.id]
-        ],
-        columns: [
-            "custrecord_rsc_data_renegociacao","custrecord_rsc_status_aprovacao","custrecord_rsc_contrato_fatura_principal","custrecord_rsc_cliente","custrecord_rsc_total_prestacoes_marcadas",
-            "custrecord_rsc_unidade","custrecord_rsc_reparcelamento_2","custrecord_rsc_valor_financiado","custrecord_rsc_total_prestacoes_marcadas","custrecord_rsc_valor_total","custrecord_rsc_valor_da_entrada",
-            "custrecord_rsc_vencimento_da_entrada","custrecord_rsc_tipo_renegociacao","custrecord_rsc_novo_valor","custrecord_rsc_novo_vencimento","custrecord_rsc_criador_ter","custrecord_rsc_boleto"
-        ]
-    }).run().getRange(0,1);
-    console.log('bscTabelaEfetivacao: '+JSON.stringify(bscTabelaEfetivacao));
-
-    const bsc_linhasResumo = search.create({type: "customrecord_rsc_sublista_resumo",
-        filters: [
-            ["custrecord_rsc_resumo","anyof",registroAtual.id]
-        ],
-        columns: [
-            "custrecord_rsc_parcela_contrato","custrecord_rsc_vencimento_parcela","custrecord_rsc_valor_parcela","custrecord_rsc_multa_parcela","custrecord_rsc_juros_parcela","custrecord_rsc_prorata",
-            "custrecord_rsc_valor_atualizado_parcela"
-        ]
-    }).run().getRange(0,1000);
-    console.log('bsc_linhasResumo', JSON.stringify(bsc_linhasResumo));
-    
-    var parcelasSelecionadas = bsc_linhasResumo.length;
-    console.log('parcelasSelecionadas', JSON.stringify(parcelasSelecionadas));
-
-    const bsc_linhas_parcelas = search.create({type: "customrecord_rsc_sublista_tab_efetivacao",
-        filters: [
-           ["custrecord_rsc_resumo_reparcelamento","anyof",registroAtual.id]
-        ],
-        columns: [
-            "custrecord_rsc_tipo_parcela","custrecord_rsc_indice","custrecord_rsc_data_juros","custrecord_rsc_parcela","custrecord_rsc_prestacao","custrecord_rsc_juros_price","custrecord_rsc_valor_amortizar",
-            "custrecord_rsc_multa_reneg","custrecord_rsc_juros_reneg","custrecord_rsc_pro_rata_am","custrecord_rsc_espelho"
-        ]
-    }).run().getRange(0,1000);
-    console.log('bsc_linhas_parcelas', JSON.stringify(bsc_linhas_parcelas));
-
-    var array_parcelas_selecionadas = [];    
-    var resumo = [];
-    var item;
-
-    const unidadeCorrecao = (idUC) => {
-        log.audit('unidadeCorrecao', idUC);
-        
-        var lkpUC = search.lookupFields({type: 'customrecord_rsc_correction_unit',
-            id: idUC,
-            columns: ['name','custrecord_rsc_ucr_calc_base_item']
-        });
-        log.audit('lkpUC', lkpUC);
-
-        return lkpUC.custrecord_rsc_ucr_calc_base_item[0].value;
-    }
-
-    if (parcelasSelecionadas > 0) {
-        for (i=0; i<parcelasSelecionadas; i++) {
-            var loadParcela = record.load({type: 'invoice', id: bsc_linhasResumo[i].getValue('custrecord_rsc_parcela_contrato'), isDynamic: true});
-            console.log('loadParcela', JSON.stringify(loadParcela));
-
-            var jurosPrice = bsc_linhas_parcelas[0].getValue('custrecord_rsc_juros_price') / parcelasSelecionadas;
-            var multa = bsc_linhasResumo[i].getValue('custrecord_rsc_multa_parcela');
-            var juros = bsc_linhasResumo[i].getValue('custrecord_rsc_juros_parcela');
-            var proRata = bsc_linhasResumo[i].getValue('custrecord_rsc_prorata');
-
-            // JUROS PRICE
-            if (jurosPrice > 0) {
-                loadParcela.selectNewLine('item')
-                .setCurrentSublistValue('item', 'item', itensAdicionais.item.JUROS_INCORRIDOS)
-                .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
-                .setCurrentSublistValue('item', 'rate', Number(jurosPrice).toFixed(2))
-                .setCurrentSublistValue('item', 'amount', Number(jurosPrice).toFixed(2))
-                .commitLine('item');
-            }
-
-            // ACRÉSCIMO SOBRE FINANCIAMENTO
-            if (multa > 0 || juros > 0) {
-                var mj = parseFloat(multa) + parseFloat(juros);
-
-                loadParcela.selectNewLine('item')
-                .setCurrentSublistValue('item', 'item', itensAdicionais.item.ACRESCIMOS)
-                .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
-                .setCurrentSublistValue('item', 'rate', Number(mj).toFixed(2))
-                .setCurrentSublistValue('item', 'amount', Number(mj).toFixed(2))
-                .commitLine('item');
-            } 
-
-            // PRO RATA
-            if (proRata > 0) {
-                var indice = loadParcela.getValue('custbody_rsc_indice');
-
-                switch(indice) {
-                    case '1': item = unidadeCorrecao(itensAdicionais.unidadeCorrecao.BRL); break;
-                    case '2': item = unidadeCorrecao(itensAdicionais.unidadeCorrecao.INCC); break;
-                    case '3': item = unidadeCorrecao(itensAdicionais.unidadeCorrecao.IGP_M); break;
-                    case '4': item = unidadeCorrecao(itensAdicionais.unidadeCorrecao.INCP); break;
-                    case '5': item = unidadeCorrecao(itensAdicionais.unidadeCorrecao.IGP_P); break;
-                    case '6': item = unidadeCorrecao(itensAdicionais.unidadeCorrecao.IPCA); break;
-                    case '7': item = unidadeCorrecao(itensAdicionais.unidadeCorrecao.INCP); break;
-                }
-                console.log('item', item);
-
-                loadParcela.selectNewLine('item')
-                .setCurrentSublistValue('item', 'item', item)
-                .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
-                .setCurrentSublistValue('item', 'rate', Number(proRata).toFixed(2))
-                .setCurrentSublistValue('item', 'amount', Number(proRata).toFixed(2))
-                .commitLine('item');
-            }
-            
-            try {
-                loadParcela.save({ignoreMandatoryFields: true});
-            } catch(e) {
-                console.log('Erro 1', JSON.stringify(e));
-
-                dialog.alert({
-                    title: 'Aviso!',
-                    message: 'Houve um erro no processamento da solicitação.'
-                });
-    
-                return false;
-            }
-            
-            array_parcelas_selecionadas.push(bsc_linhasResumo[i].getValue('custrecord_rsc_parcela_contrato'));
-
-            resumo.push({
-                parcela_contrato: bsc_linhasResumo[i].getValue('custrecord_rsc_parcela_contrato'),
-                vencimentoParcela: bsc_linhasResumo[i].getValue('custrecord_rsc_vencimento_parcela'),
-                valor: bsc_linhasResumo[i].getValue('custrecord_rsc_valor_parcela') > 0 ? bsc_linhasResumo[i].getValue('custrecord_rsc_valor_parcela') : ZERO,
-                multa: bsc_linhasResumo[i].getValue('custrecord_rsc_multa_parcela') > 0 ? bsc_linhasResumo[i].getValue('custrecord_rsc_multa_parcela') : ZERO,
-                juros: bsc_linhasResumo[i].getValue('custrecord_rsc_juros_parcela') > 0 ? bsc_linhasResumo[i].getValue('custrecord_rsc_juros_parcela') : ZERO,
-                proRata: bsc_linhasResumo[i].getValue('custrecord_rsc_prorata') > 0 ? bsc_linhasResumo[i].getValue('custrecord_rsc_prorata') : ZERO
-            });
-        }
-    }
-    console.log('array_parcelas_selecionadas', array_parcelas_selecionadas);
-
-    var naoAplicado = [];
-    
-    try {
-        var loadBoleto = record.load({type: 'creditmemo', id: bscTabelaEfetivacao[0].getValue('custrecord_rsc_boleto')});
-        console.log('loadBoleto', loadBoleto);
-
-        array_parcelas_selecionadas.forEach(function(idParcela) {
-            var linhaAplicar = loadBoleto.findSublistLineWithValue('apply', 'internalid', idParcela);
-            console.log({idparcela: idParcela, linhaAplicar: linhaAplicar});
-
-            if (linhaAplicar != -1) {
-                loadBoleto.setSublistValue('apply', 'apply', linhaAplicar, true);
-            } else {
-                naoAplicado.push(idParcela);
-                
-            }
-        });
-        
-        console.log('naoAplicado', JSON.stringify(naoAplicado));
-
-        if (naoAplicado.length > 0) {
-            dialog.alert({
-                title: 'Aviso!',
-                message: 'Uma ou mais parcelas não foram localizadas para aplicação.'
-            });
-
-            return false;
-        } else {
-            loadBoleto.save({ignoreMandatoryFields: true});
-        }       
-    } catch(e) {
-        console.log('Erro 2', JSON.stringify(e));
-
-        dialog.alert({
-            title: 'Aviso!',
-            message: 'Houve um erro no processamento da solicitação.'
-        });
-
-        return false;
-    }
-
-    var idReparcelamento2 = gerarReparcelamento2({
-        custrecord_rsc_total_financiado: bscTabelaEfetivacao[0].getValue('custrecord_rsc_valor_financiado') || 0,
-        custrecord_rsc_total_parcelas_marcadas: bscTabelaEfetivacao[0].getValue('custrecord_rsc_total_prestacoes_marcadas') || 0,
-        custrecord_custo_total: bscTabelaEfetivacao[0].getValue('custrecord_rsc_valor_total') || 0,
-        custrecord_rsc_valor_entrada: bscTabelaEfetivacao[0].getValue('custrecord_rsc_valor_da_entrada') || 0,
-        custrecord_rsc_vencimento_entrada: bscTabelaEfetivacao[0].getValue('custrecord_rsc_vencimento_da_entrada') || parcelas[0].parcela,
-        custrecord_rsc_fatura_principal: bscTabelaEfetivacao[0].getValue('custrecord_rsc_contrato_fatura_principal'),
-        custrecord_rsc_enviado: true,
-        custrecord_rsc_status: 1,
-        resumo: resumo
-    });
-    console.log('idReparcelamento2', idReparcelamento2);
-
     var loadReneg = record.load({type: 'customrecord_rsc_tab_efetiva_reparcela', id: registroAtual.id});
     console.log('loadReneg', loadReneg);
 
-    try {
-        loadReneg.setValue('custrecord_rsc_status_aprovacao', 4)
-        .setValue('custrecord_rsc_reparcelamento_2', idReparcelamento2)
-        .save({ignoreMandatoryFields: true});
-
-        // Recarrega a página
-        document.location.reload(true);
-    } catch(e) {
-        console.log('Erro 3', JSON.stringify(e));
-
-        dialog.alert({
-            title: 'Aviso!',
-            message: 'Houve um erro no processamento da solicitação.'
-        });
-
-        return false;
+    var boleto = loadReneg.getValue('custrecord_rsc_boleto');
+    var contaB = {
+        text: loadReneg.getText('custrecord_rsc_conta'),
+        value: loadReneg.getValue('custrecord_rsc_conta')
     }
+
+    // if (!boleto && conta) {
+    if (contaB.value) {
+        var confirmacao = "Conta " + contaB.text + " localizada! \n Atualizar dados para o pagamento?";
+        if (confirm(confirmacao)) {
+            var parcelaContrato = loadReneg.getSublistValue('recmachcustrecord_rsc_resumo', 'custrecord_rsc_parcela_contrato', 0);
+
+            var lookupInvoice = search.lookupFields({type: 'invoice',
+                id: parcelaContrato,
+                columns: ['tranid','total']
+            });
+    
+            var dados = {
+                reneg: registroAtual.id,
+                contaB: contaB,
+                boleto: loadReneg.getValue('custrecord_rsc_boleto'),
+                id: parcelaContrato,
+                tranid: lookupInvoice.tranid,
+                total: lookupInvoice.total,    
+                atualizacaoMonetaria: loadReneg.getValue('custrecord_rsc_atualizacao_monetaria'),           
+                principal: loadReneg.getSublistValue('recmachcustrecord_rsc_resumo', 'custrecord_rsc_valor_parcela', 0),
+                multa: loadReneg.getSublistValue('recmachcustrecord_rsc_resumo', 'custrecord_rsc_multa_parcela', 0),
+                juros: loadReneg.getSublistValue('recmachcustrecord_rsc_resumo', 'custrecord_rsc_juros_parcela', 0),
+                proRata: loadReneg.getSublistValue('recmachcustrecord_rsc_resumo', 'custrecord_rsc_prorata', 0)                      
+            }   
+            console.log(JSON.stringify(dados));
+    
+            var url_pagamento_manual = url.resolveScript({
+                scriptId: 'customscript_gaf_rec_pagto_manual_ar',
+                deploymentId: 'customdeploy_gaf_rec_pagto_manual_ar',
+                params: {    
+                    dados: JSON.stringify(dados)
+                }
+            }); 
+            console.log('url_pagamento_manual', JSON.stringify(url_pagamento_manual));
+    
+            window.open(url_pagamento_manual, "Pagamento Manual", popup);
+        }        
+    } else {
+        var bscTabelaEfetivacao = search.create({type: "customrecord_rsc_tab_efetiva_reparcela",
+            filters: [
+                ["internalid","anyof",registroAtual.id]
+            ],
+            columns: [
+                "custrecord_rsc_data_renegociacao","custrecord_rsc_status_aprovacao","custrecord_rsc_contrato_fatura_principal","custrecord_rsc_cliente","custrecord_rsc_total_prestacoes_marcadas",
+                "custrecord_rsc_atualizacao_monetaria","custrecord_rsc_unidade","custrecord_rsc_reparcelamento_2","custrecord_rsc_valor_financiado","custrecord_rsc_total_prestacoes_marcadas",
+                "custrecord_rsc_valor_total","custrecord_rsc_valor_da_entrada","custrecord_rsc_vencimento_da_entrada","custrecord_rsc_tipo_renegociacao","custrecord_rsc_novo_valor","custrecord_rsc_novo_vencimento",
+                "custrecord_rsc_criador_ter","custrecord_rsc_boleto"
+            ]
+        }).run().getRange(0,1);
+        console.log('bscTabelaEfetivacao: '+JSON.stringify(bscTabelaEfetivacao));
+
+        const bsc_linhasResumo = search.create({type: "customrecord_rsc_sublista_resumo",
+            filters: [
+                ["custrecord_rsc_resumo","anyof",registroAtual.id]
+            ],
+            columns: [
+                "custrecord_rsc_parcela_contrato","custrecord_rsc_vencimento_parcela","custrecord_rsc_valor_parcela","custrecord_rsc_multa_parcela","custrecord_rsc_juros_parcela","custrecord_rsc_prorata",
+                "custrecord_rsc_valor_atualizado_parcela"
+            ]
+        }).run().getRange(0,1000);
+        console.log('bsc_linhasResumo', JSON.stringify(bsc_linhasResumo));
+        
+        var parcelasSelecionadas = bsc_linhasResumo.length;
+        console.log('parcelasSelecionadas', JSON.stringify(parcelasSelecionadas));
+
+        const bsc_linhas_parcelas = search.create({type: "customrecord_rsc_sublista_tab_efetivacao",
+            filters: [
+                ["custrecord_rsc_resumo_reparcelamento","anyof",registroAtual.id]
+            ],
+            columns: [
+                "custrecord_rsc_tipo_parcela","custrecord_rsc_indice","custrecord_rsc_data_juros","custrecord_rsc_parcela","custrecord_rsc_prestacao","custrecord_rsc_juros_price","custrecord_rsc_valor_amortizar",
+                "custrecord_rsc_multa_reneg","custrecord_rsc_juros_reneg","custrecord_rsc_pro_rata_am","custrecord_rsc_espelho"
+            ]
+        }).run().getRange(0,1000);
+        console.log('bsc_linhas_parcelas', JSON.stringify(bsc_linhas_parcelas));
+
+        var array_parcelas_selecionadas = [];    
+        var resumo = [];
+        var item;
+
+        const unidadeCorrecao = (idUC) => {
+            log.audit('unidadeCorrecao', idUC);
+            
+            var lkpUC = search.lookupFields({type: 'customrecord_rsc_correction_unit',
+                id: idUC,
+                columns: ['name','custrecord_rsc_ucr_calc_base_item']
+            });
+            log.audit('lkpUC', lkpUC);
+
+            return lkpUC.custrecord_rsc_ucr_calc_base_item[0].value;
+        }
+
+        if (parcelasSelecionadas > 0) {
+            for (i=0; i<parcelasSelecionadas; i++) {
+                var loadParcela = record.load({type: 'invoice', id: bsc_linhasResumo[i].getValue('custrecord_rsc_parcela_contrato'), isDynamic: true});
+                console.log('loadParcela', JSON.stringify(loadParcela));
+
+                var duedate = bscTabelaEfetivacao[0].getValue('custrecord_rsc_vencimento_da_entrada') ? bscTabelaEfetivacao[0].getValue('custrecord_rsc_vencimento_da_entrada') :
+                bscTabelaEfetivacao[0].getValue('custrecord_rsc_novo_vencimento');
+                console.log('duedate', duedate);
+
+                loadParcela.setValue('custbody_rsc_tipo_renegociacao', bscTabelaEfetivacao[0].getValue('custrecord_rsc_tipo_renegociacao'))
+                .setValue('duedate', formatData(duedate));
+
+                var jurosPrice = bsc_linhas_parcelas[0].getValue('custrecord_rsc_juros_price') / parcelasSelecionadas;
+                var multa = bsc_linhasResumo[i].getValue('custrecord_rsc_multa_parcela');
+                var juros = bsc_linhasResumo[i].getValue('custrecord_rsc_juros_parcela');
+                var proRata = bsc_linhasResumo[i].getValue('custrecord_rsc_prorata');
+
+                // JUROS PRICE
+                if (jurosPrice > 0) {
+                    loadParcela.selectNewLine('item')
+                    .setCurrentSublistValue('item', 'item', itensAdicionais.item.JUROS_INCORRIDOS)
+                    .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
+                    .setCurrentSublistValue('item', 'rate', Number(jurosPrice).toFixed(2))
+                    .setCurrentSublistValue('item', 'amount', Number(jurosPrice).toFixed(2))
+                    .commitLine('item');
+                }
+
+                // ACRÉSCIMO SOBRE FINANCIAMENTO
+                if (multa > 0 || juros > 0) {
+                    var mj = parseFloat(multa) + parseFloat(juros);
+
+                    loadParcela.selectNewLine('item')
+                    .setCurrentSublistValue('item', 'item', itensAdicionais.item.ACRESCIMOS)
+                    .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
+                    .setCurrentSublistValue('item', 'rate', Number(mj).toFixed(2))
+                    .setCurrentSublistValue('item', 'amount', Number(mj).toFixed(2))
+                    .commitLine('item');
+                } 
+
+                // PRO RATA
+                if (proRata > 0) {
+                    var indice = loadParcela.getValue('custbody_rsc_indice');                
+                    var findItem;
+                    var find_amount_item = 0;
+                    var atualizacao_monetaria = bscTabelaEfetivacao[0].getValue('custrecord_rsc_atualizacao_monetaria');
+                    
+                    switch(indice) {
+                        case '1': 
+                            item = itensAdicionais.item.FRACAO_PRINCIPAL;   
+                            findItem = loadParcela.findSublistLineWithValue('item', 'item', item);
+                            if (findItem != -1) {
+                                find_amount_item = loadParcela.getSublistValue('item', 'amount', findItem);
+                                loadParcela.selectLine('item', findItem)
+                                .setCurrentSublistValue('item', 'item', item)
+                                .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
+                                .setCurrentSublistValue('item', 'rate', (Number(proRata) + Number(find_amount_item) + Number(atualizacao_monetaria)).toFixed(2))
+                                .setCurrentSublistValue('item', 'amount', (Number(proRata) + Number(find_amount_item) + Number(atualizacao_monetaria)).toFixed(2))
+                                .commitLine('item');
+                            } else {
+                                loadParcela.selectNewLine('item')
+                                .setCurrentSublistValue('item', 'item', item)
+                                .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
+                                .setCurrentSublistValue('item', 'rate', (Number(proRata) + Number(atualizacao_monetaria)).toFixed(2))
+                                .setCurrentSublistValue('item', 'amount', (Number(proRata) + Number(atualizacao_monetaria)).toFixed(2))
+                                .commitLine('item');
+                            }
+                            console.log(JSON.stringify({i: i, proRata: proRata, atualizacao_monetaria: atualizacao_monetaria, item: item, findItem: findItem, find_amount_item: find_amount_item}));
+                        break;
+                        case '2': 
+                            item = unidadeCorrecao(itensAdicionais.unidadeCorrecao.INCC); 
+                            findItem = loadParcela.findSublistLineWithValue('item', 'item', item);
+                            if (findItem != -1) {
+                                find_amount_item = loadParcela.getSublistValue('item', 'amount', findItem);
+                                loadParcela.selectLine('item', findItem)
+                                .setCurrentSublistValue('item', 'item', item)
+                                .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
+                                .setCurrentSublistValue('item', 'rate', (Number(proRata) + Number(find_amount_item) + Number(atualizacao_monetaria)).toFixed(2))
+                                .setCurrentSublistValue('item', 'amount', (Number(proRata) + Number(find_amount_item) + Number(atualizacao_monetaria)).toFixed(2))
+                                .commitLine('item');
+                            } else {
+                                loadParcela.selectNewLine('item')
+                                .setCurrentSublistValue('item', 'item', item)
+                                .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
+                                .setCurrentSublistValue('item', 'rate', (Number(proRata) + Number(atualizacao_monetaria)).toFixed(2))
+                                .setCurrentSublistValue('item', 'amount', (Number(proRata) + Number(atualizacao_monetaria)).toFixed(2))
+                                .commitLine('item');
+                            }
+                            console.log(JSON.stringify({i: i, proRata: proRata, atualizacao_monetaria: atualizacao_monetaria, item: item, findItem: findItem, find_amount_item: find_amount_item}));
+                        break;
+                        case '3': 
+                            item = unidadeCorrecao(itensAdicionais.unidadeCorrecao.IGP_M); 
+                            findItem = loadParcela.findSublistLineWithValue('item', 'item', item);
+                            if (findItem != -1) {
+                                find_amount_item = loadParcela.getSublistValue('item', 'amount', findItem);
+                                loadParcela.selectLine('item', findItem)
+                                .setCurrentSublistValue('item', 'item', item)
+                                .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
+                                .setCurrentSublistValue('item', 'rate', (Number(proRata) + Number(find_amount_item) + Number(atualizacao_monetaria)).toFixed(2))
+                                .setCurrentSublistValue('item', 'amount', (Number(proRata) + Number(find_amount_item) + Number(atualizacao_monetaria)).toFixed(2))
+                                .commitLine('item');
+                            } else {
+                                loadParcela.selectNewLine('item')
+                                .setCurrentSublistValue('item', 'item', item)
+                                .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
+                                .setCurrentSublistValue('item', 'rate', (Number(proRata) + Number(atualizacao_monetaria)).toFixed(2))
+                                .setCurrentSublistValue('item', 'amount', (Number(proRata) + Number(atualizacao_monetaria)).toFixed(2))
+                                .commitLine('item');
+                            }
+                            console.log(JSON.stringify({i: i, proRata: proRata, atualizacao_monetaria: atualizacao_monetaria, item: item, findItem: findItem, find_amount_item: find_amount_item}));
+                        break;
+                        case '4': 
+                            item = unidadeCorrecao(itensAdicionais.unidadeCorrecao.INCP); 
+                            findItem = loadParcela.findSublistLineWithValue('item', 'item', item);
+                            if (findItem != -1) {
+                                find_amount_item = loadParcela.getSublistValue('item', 'amount', findItem);
+                                loadParcela.selectLine('item', findItem)
+                                .setCurrentSublistValue('item', 'item', item)
+                                .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
+                                .setCurrentSublistValue('item', 'rate', (Number(proRata) + Number(find_amount_item) + Number(atualizacao_monetaria)).toFixed(2))
+                                .setCurrentSublistValue('item', 'amount', (Number(proRata) + Number(find_amount_item) + Number(atualizacao_monetaria)).toFixed(2))
+                                .commitLine('item');
+                            } else {
+                                loadParcela.selectNewLine('item')
+                                .setCurrentSublistValue('item', 'item', item)
+                                .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
+                                .setCurrentSublistValue('item', 'rate', (Number(proRata) + Number(atualizacao_monetaria)).toFixed(2))
+                                .setCurrentSublistValue('item', 'amount', (Number(proRata) + Number(atualizacao_monetaria)).toFixed(2))
+                                .commitLine('item');
+                            }
+                            console.log(JSON.stringify({i: i, proRata: proRata, atualizacao_monetaria: atualizacao_monetaria, item: item, findItem: findItem, find_amount_item: find_amount_item}));
+                        break;
+                        case '5': 
+                            item = unidadeCorrecao(itensAdicionais.unidadeCorrecao.IGP_P); 
+                            findItem = loadParcela.findSublistLineWithValue('item', 'item', item);
+                            if (findItem != -1) {
+                                find_amount_item = loadParcela.getSublistValue('item', 'amount', findItem);
+                                loadParcela.selectLine('item', findItem)
+                                .setCurrentSublistValue('item', 'item', item)
+                                .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
+                                .setCurrentSublistValue('item', 'rate', (Number(proRata) + Number(find_amount_item) + Number(atualizacao_monetaria)).toFixed(2))
+                                .setCurrentSublistValue('item', 'amount', (Number(proRata) + Number(find_amount_item) + Number(atualizacao_monetaria)).toFixed(2))
+                                .commitLine('item');
+                            } else {
+                                loadParcela.selectNewLine('item')
+                                .setCurrentSublistValue('item', 'item', item)
+                                .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
+                                .setCurrentSublistValue('item', 'rate', (Number(proRata) + Number(atualizacao_monetaria)).toFixed(2))
+                                .setCurrentSublistValue('item', 'amount', (Number(proRata) + Number(atualizacao_monetaria)).toFixed(2))
+                                .commitLine('item');
+                            }
+                            console.log(JSON.stringify({i: i, proRata: proRata, atualizacao_monetaria: atualizacao_monetaria, item: item, findItem: findItem, find_amount_item: find_amount_item}));
+                        break;
+                        case '6': 
+                            item = unidadeCorrecao(itensAdicionais.unidadeCorrecao.IPCA);
+                            findItem = loadParcela.findSublistLineWithValue('item', 'item', item);
+                            if (findItem != -1) {
+                                find_amount_item = loadParcela.getSublistValue('item', 'amount', findItem);
+                                loadParcela.selectLine('item', findItem)
+                                .setCurrentSublistValue('item', 'item', item)
+                                .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
+                                .setCurrentSublistValue('item', 'rate', (Number(proRata) + Number(find_amount_item) + Number(atualizacao_monetaria)).toFixed(2))
+                                .setCurrentSublistValue('item', 'amount', (Number(proRata) + Number(find_amount_item) + Number(atualizacao_monetaria)).toFixed(2))
+                                .commitLine('item');
+                            } else {
+                                loadParcela.selectNewLine('item')
+                                .setCurrentSublistValue('item', 'item', item)
+                                .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
+                                .setCurrentSublistValue('item', 'rate', (Number(proRata) + Number(atualizacao_monetaria)).toFixed(2))
+                                .setCurrentSublistValue('item', 'amount', (Number(proRata) + Number(atualizacao_monetaria)).toFixed(2))
+                                .commitLine('item');
+                            }
+                            console.log(JSON.stringify({i: i, proRata: proRata, atualizacao_monetaria: atualizacao_monetaria, item: item, findItem: findItem, find_amount_item: find_amount_item}));
+                        break;
+                        case '7': 
+                            item = unidadeCorrecao(itensAdicionais.unidadeCorrecao.INCP); 
+                            findItem = loadParcela.findSublistLineWithValue('item', 'item', item);
+                            if (findItem != -1) {
+                                find_amount_item = loadParcela.getSublistValue('item', 'amount', findItem);
+                                loadParcela.selectLine('item', findItem)
+                                .setCurrentSublistValue('item', 'item', item)
+                                .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
+                                .setCurrentSublistValue('item', 'rate', (Number(proRata) + Number(find_amount_item) + Number(atualizacao_monetaria)).toFixed(2))
+                                .setCurrentSublistValue('item', 'amount', (Number(proRata) + Number(find_amount_item) + Number(atualizacao_monetaria)).toFixed(2))
+                                .commitLine('item');
+                            } else {
+                                loadParcela.selectNewLine('item')
+                                .setCurrentSublistValue('item', 'item', item)
+                                .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
+                                .setCurrentSublistValue('item', 'rate', (Number(proRata) + Number(atualizacao_monetaria)).toFixed(2))
+                                .setCurrentSublistValue('item', 'amount', (Number(proRata) + Number(atualizacao_monetaria)).toFixed(2))
+                                .commitLine('item');
+                            }
+                            console.log(JSON.stringify({i: i, proRata: proRata, atualizacao_monetaria: atualizacao_monetaria, item: item, findItem: findItem, find_amount_item: find_amount_item})); 
+                        break;
+                    }                
+
+                    // if (findItem) {
+                    //     loadParcela.selectLine('item', findItem)
+                    //     .setCurrentSublistValue('item', 'item', item)
+                    //     .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
+                    //     .setCurrentSublistValue('item', 'rate', Number(proRata + find_amount_item).toFixed(2))
+                    //     .setCurrentSublistValue('item', 'amount', Number(proRata + find_amount_item).toFixed(2))
+                    //     .commitLine('item');
+                    // } else {
+                    //     loadParcela.selectNewLine('item')
+                    //     .setCurrentSublistValue('item', 'item', item)
+                    //     .setCurrentSublistValue('item', 'quantity', itensAdicionais.quantity)
+                    //     .setCurrentSublistValue('item', 'rate', Number(proRata).toFixed(2))
+                    //     .setCurrentSublistValue('item', 'amount', Number(proRata).toFixed(2))
+                    //     .commitLine('item');
+                    // }                
+                }
+                
+                try {
+                    loadParcela.save({ignoreMandatoryFields: true});
+                } catch(e) {
+                    console.log('Erro 1', JSON.stringify(e));
+
+                    loadReneg.setValue('custrecord_rsc_erro_renegociacao', JSON.stringify(e))
+                    .save({ignoreMandatoryFields: true});
+
+                    dialog.alert({
+                        title: 'Aviso!',
+                        message: 'Houve um erro no processamento da solicitação.'
+                    });
+        
+                    return false;
+                }
+                
+                array_parcelas_selecionadas.push(bsc_linhasResumo[i].getValue('custrecord_rsc_parcela_contrato'));
+
+                resumo.push({
+                    parcela_contrato: bsc_linhasResumo[i].getValue('custrecord_rsc_parcela_contrato'),
+                    vencimentoParcela: bsc_linhasResumo[i].getValue('custrecord_rsc_vencimento_parcela'),
+                    valor: bsc_linhasResumo[i].getValue('custrecord_rsc_valor_parcela') > 0 ? bsc_linhasResumo[i].getValue('custrecord_rsc_valor_parcela') : ZERO,
+                    multa: bsc_linhasResumo[i].getValue('custrecord_rsc_multa_parcela') > 0 ? bsc_linhasResumo[i].getValue('custrecord_rsc_multa_parcela') : ZERO,
+                    juros: bsc_linhasResumo[i].getValue('custrecord_rsc_juros_parcela') > 0 ? bsc_linhasResumo[i].getValue('custrecord_rsc_juros_parcela') : ZERO,
+                    proRata: bsc_linhasResumo[i].getValue('custrecord_rsc_prorata') > 0 ? bsc_linhasResumo[i].getValue('custrecord_rsc_prorata') : ZERO
+                });
+            }
+        }
+        console.log('array_parcelas_selecionadas', array_parcelas_selecionadas);
+
+        var naoAplicado = [];
+        
+        try {
+            var loadBoleto = record.load({type: 'creditmemo', id: bscTabelaEfetivacao[0].getValue('custrecord_rsc_boleto')});
+            console.log('loadBoleto', loadBoleto);
+
+            array_parcelas_selecionadas.forEach(function(idParcela) {
+                var linhaAplicar = loadBoleto.findSublistLineWithValue('apply', 'internalid', idParcela);
+                console.log({idparcela: idParcela, linhaAplicar: linhaAplicar});
+
+                if (linhaAplicar != -1) {
+                    loadBoleto.setSublistValue('apply', 'apply', linhaAplicar, true);
+                } else {
+                    naoAplicado.push(idParcela);
+                    
+                }
+            });
+            
+            console.log('naoAplicado', JSON.stringify(naoAplicado));
+
+            if (naoAplicado.length > 0) {
+                dialog.alert({
+                    title: 'Aviso!',
+                    message: 'Uma ou mais parcelas não foram localizadas para aplicação.'
+                });
+
+                return false;
+            } else {
+                loadBoleto.save({ignoreMandatoryFields: true});
+            }       
+        } catch(e) {
+            console.log('Erro 2', JSON.stringify(e));
+
+            loadReneg.setValue('custrecord_rsc_erro_renegociacao', JSON.stringify(e))
+            .save({ignoreMandatoryFields: true});
+
+            dialog.alert({
+                title: 'Aviso!',
+                message: 'Houve um erro no processamento da solicitação.'
+            });
+
+            return false;
+        }
+
+        var idReparcelamento2 = gerarReparcelamento2({
+            custrecord_rsc_total_financiado: bscTabelaEfetivacao[0].getValue('custrecord_rsc_valor_financiado') || 0,
+            custrecord_rsc_total_parcelas_marcadas: bscTabelaEfetivacao[0].getValue('custrecord_rsc_total_prestacoes_marcadas') || 0,
+            custrecord_custo_total: bscTabelaEfetivacao[0].getValue('custrecord_rsc_valor_total') || 0,
+            custrecord_rsc_valor_entrada: bscTabelaEfetivacao[0].getValue('custrecord_rsc_valor_da_entrada') || 0,
+            custrecord_rsc_vencimento_entrada: bscTabelaEfetivacao[0].getValue('custrecord_rsc_vencimento_da_entrada') || parcelas[0].parcela,
+            custrecord_rsc_fatura_principal: bscTabelaEfetivacao[0].getValue('custrecord_rsc_contrato_fatura_principal'),
+            custrecord_rsc_enviado: true,
+            custrecord_rsc_status: 1,
+            resumo: resumo
+        });
+        console.log('idReparcelamento2', idReparcelamento2);
+
+        try {
+            loadReneg.setValue('custrecord_rsc_status_aprovacao', 4)
+            .setValue('custrecord_rsc_reparcelamento_2', idReparcelamento2)
+            .save({ignoreMandatoryFields: true});
+
+            // Recarrega a página
+            document.location.reload(true);
+        } catch(e) {
+            console.log('Erro 3', JSON.stringify(e));
+
+            loadReneg.setValue('custrecord_rsc_erro_renegociacao', JSON.stringify(e))
+            .save({ignoreMandatoryFields: true});
+
+            dialog.alert({
+                title: 'Aviso!',
+                message: 'Houve um erro no processamento da solicitação.'
+            });
+
+            return false;
+        }
+    }    
 }
 
 return {

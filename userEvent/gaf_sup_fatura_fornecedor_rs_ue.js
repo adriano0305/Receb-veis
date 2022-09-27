@@ -21,7 +21,31 @@ function atualizarTransacao(tipo, idInterno, valores) {
 
 const beforeLoad = (context) => {}
 
-const beforeSubmit = (context) => {}
+const beforeSubmit = (context) => {
+    log.audit('beforeSubmit', context);
+
+    const novoRegistro = context.newRecord;
+    const transacao = novoRegistro.type;
+    const tipo = context.type;
+
+    var campos = {};
+
+    if (tipo == 'delete') {
+        for (i=0; i<novoRegistro.getLineCount('apply'); i++) {
+            var objAplicado = {
+                internalid: novoRegistro.getSublistValue('apply', 'internalid', i),
+                trantype: novoRegistro.getSublistValue('apply', 'trantype', i),
+                type: novoRegistro.getSublistValue('apply', 'type', i)
+            }                        
+            log.audit('objAplicado', objAplicado);
+
+            if (objAplicado.trantype == 'VendBill') {
+                campos.custbody_rsc_etapa_requisicao = 103; // (Etapa da Transação: Em pagamento)
+                atualizarTransacao('vendorbill', objAplicado.internalid, campos);
+            }
+        }  
+    }
+}
 
 const afterSubmit = (context) => {
     log.audit('afterSubmit', context);
@@ -40,13 +64,20 @@ const afterSubmit = (context) => {
                     if (recebimentoFisico) {
                         campos.custbody_rsc_link_fatura_fornecedor = novoRegistro.id;
                         atualizarTransacao('itemreceipt', recebimentoFisico, campos);
-                    }            
+                    }  
+                    
+                    var status = novoRegistro.getText('status');
+
+                    if (status == 'Pago integralmente' || status == 'Paid In Full') {
+                        campos.custbody_rsc_etapa_requisicao = 112; // (Etapa da Transação: Pago)
+                        atualizarTransacao('vendorbill', novoRegistro.id, campos);
+                    }                    
                 }           
             }
         break;
 
         case 'vendorpayment': 
-            if (tipo == 'create') {
+            if (tipo == 'create' || tipo == 'edit') {
                 if (novoRegistro.id) {
                     for (i=0; i<novoRegistro.getLineCount('apply'); i++) {
                         var objAplicado = {
@@ -77,7 +108,7 @@ const afterSubmit = (context) => {
 
 return {
     // beforeLoad: beforeLoad,
-    // beforeSubmit: beforeSubmit,
+    beforeSubmit: beforeSubmit,
     afterSubmit: afterSubmit
 }
 });

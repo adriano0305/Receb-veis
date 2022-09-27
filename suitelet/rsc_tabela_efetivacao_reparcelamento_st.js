@@ -97,7 +97,7 @@ const fatorCorrecao = (nome) => {
 }
 
 const dataAtual = (data, detalhe) => {
-    const dia = data.getDate() > 9 ? data.getDate() : '0'+(data.getDate()+1);
+    const dia = data.getDate() > 9 ? data.getDate()+1 : '0'+(data.getDate()+1);
     var mes = data.getMonth()+1 > 9 ? data.getMonth()+1 : data.getMonth()+1;
     const ano = data.getFullYear();
     
@@ -235,11 +235,15 @@ const onRequest = (context) => {
         template += '<td><b>Total Atualizado</b></td>';
         template += '<td><b>Vencimento</b></td>';
         template += '<td><b>Juros</b></td>';        
-        template += '<td><b>Data Juros</b></td>';
-        template += '</tr>';
+        template += '<td><b>Data Juros Price</b></td>';
+        template += '</tr>';        
+
+        var total_parcelas_selecionadas = 0;
 
         body.resumo.forEach(function(sumario, index) {
             log.audit('sumario '+index, sumario);
+
+            total_parcelas_selecionadas = parseFloat(total_parcelas_selecionadas) + parseFloat(sumario['Total Princ.']);
 
             // Amortização
             if (body.tipoRenegociacao == 1) {
@@ -303,16 +307,22 @@ const onRequest = (context) => {
 
                 template += '<td>';
                 template += moedaBR(sumario['Valor Parc. (R$)']);
+                // template += fi(sumario['ID'], 'Fração Principal');
                 template += '</td>';
 
                 arrayResumo.push(parseFloat(sumario['Total Princ.']));
+                // arrayResumo.push(inv(sumario['ID'], 'Fração Principal + Juros à incorrer'));
+                // arrayResumo.push(parseFloat(sumario['Valor Parc. (R$)']));
 
                 template += '<td>';
                 template += moedaBR(parseFloat(sumario['Total Princ.']));
+                // template += fi(sumario['ID'], 'Fração Principal + Juros à incorrer');
+                // template += moedaBR(sumario['Valor Parc. (R$)']);
                 template += '</td>';
 
                 template += '<td>';
-                template += sumario['1º Vencimento'];
+                // template += sumario['1º Vencimento'];
+                template += body.vencimentoEntrada;
                 template += '</td>';
 
                 template += '<td>';
@@ -394,8 +404,10 @@ const onRequest = (context) => {
         template += '<td><b>Total Atualizado</b></td>';
         template += '<td><b>Vencimento</b></td>';
         template += '<td><b>Juros</b></td>';
-        template += '<td><b>Data Juros</b></td>';
+        template += '<td><b>Data Juros Price</b></td>';
         template += '</tr>';
+
+        total_parcelas_selecionadas = moedaBR(parseFloat(total_parcelas_selecionadas / body.parcelas.length));
 
         body.parcelas.forEach(function(parcela, index) {
             log.audit('parcela: '+index, parcela);
@@ -461,7 +473,14 @@ const onRequest = (context) => {
                 // template += '</td>';
                 
                 template += '<td>';
-                template += moedaBR(parseFloat(parcela['Valor Parc. (R$)']) - parseFloat(parcela['Total Princ.']) - parseFloat(parcela['Pro Rata']) - parseFloat(parcela['Multa']) - parseFloat(parcela['Juros Reneg']));
+                // template += moedaBR(parseFloat(parcela['Valor Parc. (R$)']) - parseFloat(parcela['Total Princ.']) - parseFloat(parcela['Pro Rata']) - parseFloat(parcela['Multa']) - parseFloat(parcela['Juros Reneg']));
+                // template += total_parcelas_selecionadas;
+                template += moedaBR(
+                    parseFloat(
+                        (parcela['Valor Parc. (R$)']) - parseFloat(parcela['Total Princ.']) - parseFloat(parcela['Pro Rata']) - parseFloat(parcela['Multa']) - parseFloat(parcela['Juros Reneg']) +
+                        (parseFloat(parcela['Pro Rata']) + parseFloat(parcela['Multa']) + parseFloat(parcela['Juros Reneg']))
+                    )
+                );
                 template += '</td>';
                 
                 arrayParcela.push(parseFloat(parcela['Valor Parc. (R$)']));
