@@ -466,7 +466,7 @@ const onRequest = (context) => {
             var taskReparcelamento = task.create({
                 taskType: task.TaskType.MAP_REDUCE,
                 scriptId: 'customscript_rsc_fatura_reparcela_2_mr',
-                // deploymentId: 'customdeploy_rsc_fatura_reparcela_2_mr',
+                deploymentId: 'customdeploy_rsc_fatura_reparcela_2_mr',
                 params: {
                     custscript_rsc_json_reparcelamento: parameters
                 }

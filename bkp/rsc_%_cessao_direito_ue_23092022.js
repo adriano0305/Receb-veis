@@ -4,13 +4,8 @@
  */
 const custPage = 'custpage_rsc_';
 
-const opcoes = {
-    enablesourcing: true,
-    ignoreMandatoryFields: true
-}
-
-define(['N/log', 'N/query', 'N/record', 'N/runtime', 'N/search', 'N/ui/serverWidget'], (log, query, record, runtime, search, serverWidget) => {
-function localizarProponentes(idContrato) {
+define(['N/log', 'N/query', 'N/runtime', 'N/search', 'N/ui/serverWidget'], (log, query, runtime, search, serverWidget) => {
+const localizarProponentes = (idContrato) => {
     const sql = "SELECT prop.id, prop.custrecord_rsc_clientes_contratos, prop.custrecord_rsc_pct_part, prop.custrecord_rsc_principal, prop.isinactive, cust.entitytitle "+
     "FROM customrecord_rsc_finan_client_contrato as prop "+
     "INNER JOIN customer AS cust ON cust.id = prop.custrecord_rsc_clientes_contratos "+
@@ -28,7 +23,7 @@ function localizarProponentes(idContrato) {
     return sqlResults;
 }
 
-function listaProponentes(form, idContrato) {
+const listaProponentes = (form, idContrato) => {
     // Tabela de Proponentes
     const guiaProponentes = form.addTab({
         id: custPage+'guia_proponentes',
@@ -117,95 +112,6 @@ function listaProponentes(form, idContrato) {
     }
 }
 
-function ctrlEsc(bookeepingControl) {
-    // log.audit('ctrlEsc', bookeepingControl);
-
-    var relacao = {
-        id_ctrl_esc: bookeepingControl.id,
-        TAS: []
-    };
-
-    var id_ctrl_esc = bookeepingControl.id;
-
-    bookeepingControl.setValue('custrecord_lrc_status_escrituracao', 26) // Escritura Transferida
-    .save(opcoes)
-
-    log.audit('ctrlEsc', {status: 'Sucesso', ctrlEsc: id_ctrl_esc, status_ctrl_esc: 'Escritura Transferida'});
-
-    var bscTAS = search.create({type: "customrecord_lrc_tab_andamento_status",
-        filters: [
-           ["custrecord_lrc_controle_escrituracao","anyof",id_ctrl_esc]
-        ],
-        columns: [
-            search.createColumn({name: "name", sort: search.Sort.ASC, label: "Nome"}),
-           "custrecord_lrc_controle_escrituracao","custrecord_lrc_referente_faturamento","custrecord_lrc_referente_cliente","custrecord_lrc_status_alterado","custrecord_lrc_alterado_para_status"
-        ]
-    }).run().getRange(0,1000);
-    log.audit('bscTAS', bscTAS);
-
-    if (bscTAS.length > 0) {
-        for (var prop in bscTAS) {
-            if (bscTAS.hasOwnProperty(prop)) {
-                record.submitFields({type: 'customrecord_lrc_tab_andamento_status',
-                    id: bscTAS[prop].id,
-                    values: {
-                        custrecord_lrc_alterado_para_status: 26 // Escritura Transferida
-                    },
-                    options: opcoes                    
-                });
-
-                relacao.TAS.push(bscTAS[prop].id);
-            }                
-        }
-        log.audit('ctrlEsc', {status: 'Sucesso', ctrlEsc: relacao});
-    }
-}
-
-function atualizarTransacao(tipo, idInterno, valores) {
-    // log.audit('atualizarTransacao', {tipo: tipo, idInterno: idInterno, valores: valores});
-
-    const loadReg = record.load({type: tipo, id: idInterno});
-
-    var load_ctrl_esc = record.load({type: 'customrecord_lrc_controle_escrituracao', id: loadReg.getValue('custbody_lrc_fat_controle_escrituracao')});
-
-    loadReg.setValue('custbody_rsc_status_contrato', valores.custbody_rsc_status_contrato)
-    .save(opcoes);
-
-    log.audit('atualizarTransacao', {status: 'Sucesso', tipo: tipo, idInterno: idInterno, valores: valores});
-
-    if (valores.custbody_rsc_status_contrato == 4) {
-        ctrlEsc(load_ctrl_esc);
-    }
-}
-
-const afterSubmit = (context) => {
-    log.audit('afterSubmit', context);
-
-    const registroAtual = context.newRecord;
-
-    const tipo = context.type;
-
-    if (tipo == 'create' || tipo == 'edit') {
-        const statusCessao = registroAtual.getValue('custrecord_rsc_status_cessao');
-
-        const contrato = registroAtual.getValue('custrecord_rsc_contrato');
-
-        var campos = {};
-        
-        // Esperando aprovação
-        if (statusCessao == 1) {
-            campos.custbody_rsc_status_contrato = 4; // Cessão de Direitos
-        }
-
-        // Aprovado
-        if (statusCessao == 2) {
-            campos.custbody_rsc_status_contrato = 2; // Contrato 
-        }
-
-        atualizarTransacao('salesorder', contrato, campos);
-    }    
-}
-
 const beforeLoad = (context) => {
     log.audit('beforeLoad', context);
 
@@ -277,7 +183,6 @@ const beforeLoad = (context) => {
 }
 
 return {
-    afterSubmit: afterSubmit,
     beforeLoad: beforeLoad
 };
 

@@ -17,11 +17,12 @@ define(["require", "exports", "N/log", "N/record", "./ClientScript_fluxoEscritur
     log_1 = __importDefault(log_1);
     record_1 = __importDefault(record_1);
     var afterSubmit = function (ctx) {
+        log_1.default.audit('afterSubmit', ctx);
         if (ctx.type == ctx.UserEventType.EDIT) {
             var newRecord = ctx.newRecord;
             var tipo_contrato = newRecord.getValue('custbody_rsc_status_contrato');
             var controleEscritura = newRecord.getValue('custbody_lrc_fat_controle_escrituracao');
-            if (tipo_contrato == 4) {
+            if (tipo_contrato == 4 || tipo_contrato == 2) {
                 if (controleEscritura) {
                     var controleEscrituraAntigoRecord = record_1.default.load({
                         type: 'customrecord_lrc_controle_escrituracao',

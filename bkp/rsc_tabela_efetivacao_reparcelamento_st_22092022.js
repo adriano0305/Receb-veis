@@ -241,7 +241,7 @@ const onRequest = (context) => {
         var total_parcelas_selecionadas = 0;
 
         body.resumo.forEach(function(sumario, index) {
-            // log.audit('sumario '+index, sumario);
+            log.audit('sumario '+index, sumario);
 
             total_parcelas_selecionadas = parseFloat(total_parcelas_selecionadas) + parseFloat(sumario['Total Princ.']);
 
@@ -310,19 +310,19 @@ const onRequest = (context) => {
                 // template += fi(sumario['ID'], 'Fração Principal');
                 template += '</td>';
 
-                // arrayResumo.push(parseFloat(sumario['Total Princ.']));
+                arrayResumo.push(parseFloat(sumario['Total Princ.']));
                 // arrayResumo.push(inv(sumario['ID'], 'Fração Principal + Juros à incorrer'));
-                arrayResumo.push(parseFloat(sumario['Valor Parc. (R$)']));
+                // arrayResumo.push(parseFloat(sumario['Valor Parc. (R$)']));
 
                 template += '<td>';
-                // template += moedaBR(parseFloat(sumario['Total Princ.']));
+                template += moedaBR(parseFloat(sumario['Total Princ.']));
                 // template += fi(sumario['ID'], 'Fração Principal + Juros à incorrer');
-                template += moedaBR(sumario['Valor Parc. (R$)']);
+                // template += moedaBR(sumario['Valor Parc. (R$)']);
                 template += '</td>';
 
                 template += '<td>';
-                template += sumario['1º Vencimento'];
-                // template += body.vencimentoEntrada;
+                // template += sumario['1º Vencimento'];
+                template += body.vencimentoEntrada;
                 template += '</td>';
 
                 template += '<td>';

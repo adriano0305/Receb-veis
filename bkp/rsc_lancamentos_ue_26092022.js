@@ -2067,50 +2067,49 @@ const afterSubmit = (context) => {
                                 log.audit('bsc_cnab_conta_bancaria', bsc_cnab_conta_bancaria);
 
                                 if (bsc_cnab_conta_bancaria.length > 0) {
-                                    if (lkpProjeto.custentity_rsc_c_baixa_clientes[0] && lkpProjeto.custentity_rsc_d_receb_clientes[0] && lkpProjeto.custentity_rsc_c_receb_clientes[0]) {
-                                        arrayLancamentos.push({
-                                            acao: 'create',
-                                            transacao: transacao,   
+                                    arrayLancamentos.push({
+                                        acao: 'create',
+                                        transacao: transacao,   
+                                        memo: 'Securitização: Projeto '+lkpProjeto.companyname,
+                                        subsidiary: novoRegistro.getValue('subsidiary'),
+                                        custbody_rsc_projeto_obra_gasto_compra: nomeProjeto.value,
+                                        custbody_ref_parcela: novoRegistro.id,
+                                        custbody_lrc_fatura_principal: sqlResults[0].custbody_lrc_fatura_principal,
+                                        // custbody_lrc_fatura_principal: loadReg.getValue('custbody_lrc_fatura_principal'),
+                                        custbody_rsc_empproj_securitizado: true,
+                                        line: [{
+                                            account: bsc_cnab_conta_bancaria[0].getValue('custrecord_rsc_cnab_ba_accounting_ls'),
+                                            debit: novoRegistro.getValue('total'),
                                             memo: 'Securitização: Projeto '+lkpProjeto.companyname,
-                                            subsidiary: novoRegistro.getValue('subsidiary'),
-                                            custbody_rsc_projeto_obra_gasto_compra: nomeProjeto.value,
-                                            custbody_ref_parcela: novoRegistro.id,
-                                            custbody_lrc_fatura_principal: sqlResults[0].custbody_lrc_fatura_principal,
-                                            // custbody_lrc_fatura_principal: loadReg.getValue('custbody_lrc_fatura_principal'),
-                                            custbody_rsc_empproj_securitizado: true,
-                                            line: [{
-                                                account: bsc_cnab_conta_bancaria[0].getValue('custrecord_rsc_cnab_ba_accounting_ls'),
-                                                debit: novoRegistro.getValue('total'),
-                                                memo: 'Securitização: Projeto '+lkpProjeto.companyname,
-                                                entity: '',
-                                                location: '',
-                                                custcol_rsc_devido_subsidiary: lkpProjeto.subsidiary[0].value
-                                                
-                                            },{
-                                                account: lkpProjeto.custentity_rsc_c_baixa_clientes[0].value,
-                                                credit: novoRegistro.getValue('total'),
-                                                memo: 'Securitização: Projeto '+lkpProjeto.companyname,
-                                                entity: '',
-                                                location: '',
-                                                custcol_rsc_devido_subsidiary: lkpProjeto.subsidiary[0].value
-                                            },{
-                                                account: lkpProjeto.custentity_rsc_d_receb_clientes[0].value,
-                                                debit: novoRegistro.getValue('total'),
-                                                memo: 'Securitização: Projeto '+lkpProjeto.companyname,
-                                                entity: '',
-                                                location: '',
-                                                custcol_rsc_devido_subsidiary: lkpProjeto.subsidiary[0].value
-                                            },{
-                                                account: lkpProjeto.custentity_rsc_c_receb_clientes[0].value,
-                                                credit: novoRegistro.getValue('total'),
-                                                memo: 'Securitização: Projeto '+lkpProjeto.companyname,
-                                                entity: '',
-                                                location: '',
-                                                custcol_rsc_devido_subsidiary: lkpProjeto.subsidiary[0].value
-                                            }]               
-                                        });
-                                    }                                    
-                                }                                
+                                            entity: '',
+                                            location: '',
+                                            custcol_rsc_devido_subsidiary: lkpProjeto.subsidiary[0].value
+                                            
+                                        },{
+                                            account: lkpProjeto.custentity_rsc_c_baixa_clientes[0].value,
+                                            credit: novoRegistro.getValue('total'),
+                                            memo: 'Securitização: Projeto '+lkpProjeto.companyname,
+                                            entity: '',
+                                            location: '',
+                                            custcol_rsc_devido_subsidiary: lkpProjeto.subsidiary[0].value
+                                        },{
+                                            account: lkpProjeto.custentity_rsc_d_receb_clientes[0].value,
+                                            debit: novoRegistro.getValue('total'),
+                                            memo: 'Securitização: Projeto '+lkpProjeto.companyname,
+                                            entity: '',
+                                            location: '',
+                                            custcol_rsc_devido_subsidiary: lkpProjeto.subsidiary[0].value
+                                        },{
+                                            account: lkpProjeto.custentity_rsc_c_receb_clientes[0].value,
+                                            credit: novoRegistro.getValue('total'),
+                                            memo: 'Securitização: Projeto '+lkpProjeto.companyname,
+                                            entity: '',
+                                            location: '',
+                                            custcol_rsc_devido_subsidiary: lkpProjeto.subsidiary[0].value
+                                        }]               
+                                    });
+                                }
+                                
                             } else {
                                 arrayLancamentos.push({
                                     // acao: tipo,

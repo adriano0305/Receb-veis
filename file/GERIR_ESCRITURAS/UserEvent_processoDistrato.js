@@ -17,12 +17,15 @@ define(["require", "exports", "N/log", "N/record", "./ClientScript_fluxoEscritur
     log_1 = __importDefault(log_1);
     record_1 = __importDefault(record_1);
     var afterSubmit = function (ctx) {
-        if (ctx.type == ctx.UserEventType.EDIT) {
+        if (ctx.type == ctx.UserEventType.EDIT || ctx.type == ctx.UserEventType.XEDIT) {
             var newRecord = ctx.newRecord;
-            var invoiceId = newRecord.getValue("tranid");
-            var tipo_contrato = newRecord.getValue('custbody_rsc_status_contrato');
-            var controle_escrituracao = newRecord.getValue('custbody_lrc_fat_controle_escrituracao');
-            var subsidiary = newRecord.getValue('subsidiary');
+            var loadReg = record_1.default.load({
+                type: 'salesorder', id: newRecord.id
+            });
+            var numeroDocumento = loadReg.getValue("tranid");
+            var tipo_contrato = loadReg.getValue('custbody_rsc_status_contrato');
+            var controle_escrituracao = loadReg.getValue('custbody_lrc_fat_controle_escrituracao');
+            var subsidiary = loadReg.getValue('subsidiary');
             if (tipo_contrato == 3) {
                 if (controle_escrituracao) {
                     var controleEscrituracaoRecord = record_1.default.load({
@@ -37,16 +40,16 @@ define(["require", "exports", "N/log", "N/record", "./ClientScript_fluxoEscritur
                             novaDataInicio: 0,
                             novaDataPlanejadaEntrega: 0,
                             controleEscrituracaoId: controleEscrituracaoRecord.getValue('id'),
-                            statusAtualEscrituracaoId: controleEscrituracaoRecord.getValue('custrecord_lrc_status_escrituracao'),
+                            statusAtualEscrituracaoId: controleEscrituracaoRecord .getValue('custrecord_lrc_status_escrituracao'),
                             newStatusId: 25,
                             escrituraEncerrada: true,
                             subsidiaria: subsidiary,
                             baixaAlienacao: 0
                         };
                         ClientScript_fluxoEscritura_1.changeDeedControlStatus(jsonFaturaDados);
-                        log_1.default.audit('afterSubmit', {controle_escrituracao: controle_escrituracao, status: status});
+                        log_1.default.audit('afterSubmit', {numeroDocumento: numeroDocumento, controle_escrituracao: controle_escrituracao, status: status});
                     } else {
-                        log_1.default.audit('afterSubmit', {controle_escrituracao: controle_escrituracao, status: {value: status, text: 'Unidade Distratada'}});
+                        log_1.default.audit('afterSubmit', {numeroDocumento: numeroDocumento, controle_escrituracao: controle_escrituracao, status: {value: status, text: 'Unidade Distratada'}});
                     }
                 }
             }
