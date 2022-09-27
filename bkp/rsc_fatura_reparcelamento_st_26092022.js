@@ -488,29 +488,19 @@ function onRequest(context) {
             label: 'Fator 2'
         });
 
-        // fator_correcao_2.updateDisplayType({
-        //     displayType: serverWidget.FieldDisplayType.HIDDEN
-        // });
-
-        var fator_correcao_3_parcela = sublistaReparcelamento.addField({
-            id: custPage+'fator_correcao_3_parcela',
-            type: serverWidget.FieldType.FLOAT,
-            label: 'Fator 3 (Parcela)'
+        fator_correcao_2.updateDisplayType({
+            displayType: serverWidget.FieldDisplayType.HIDDEN
         });
-
-        // fator_correcao_3_parcela.updateDisplayType({
-        //     displayType: serverWidget.FieldDisplayType.HIDDEN
-        // });
 
         var fator_correcao_3 = sublistaReparcelamento.addField({
             id: custPage+'fator_correcao_3',
             type: serverWidget.FieldType.FLOAT,
-            label: 'Fator 3 (Última Atualização)'
+            label: 'Fator 3'
         });
 
-        // fator_correcao_3.updateDisplayType({
-        //     displayType: serverWidget.FieldDisplayType.HIDDEN
-        // });        
+        fator_correcao_3.updateDisplayType({
+            displayType: serverWidget.FieldDisplayType.HIDDEN
+        });
 
         var fator_correcao_atual = sublistaReparcelamento.addField({
             id: custPage+'fator_correcao_atual',
@@ -640,12 +630,6 @@ function onRequest(context) {
                     id: fator_correcao_2.id,
                     line: i,
                     value: prestacoes.arrayParcelas[i].fator_correcao_2
-                });
-
-                sublistaReparcelamento.setSublistValue({
-                    id: fator_correcao_3_parcela.id,
-                    line: i,
-                    value: prestacoes.arrayParcelas[i].fator_correcao_3_parcela
                 });
 
                 sublistaReparcelamento.setSublistValue({
@@ -1266,7 +1250,7 @@ function localizarParcelas(idFatura) {
                                 indice: sqlResults[prop].custbody_rsc_indice,
                                 ultimaAtualizacao: sqlResults[prop].custbody_rsc_ultima_atualizacao,
                                 fator_correcao_2: fatorCorrecao(hoje.mes, 'anterior2', sqlResults[prop].custbody_rsc_indice),
-                                fator_correcao_3_parcela: fatorCorrecao(hoje.mes, 'anterior3', sqlResults[prop].custbody_rsc_indice),
+                                // fator_correcao_3: fatorCorrecao(hoje.mes, 'anterior3', sqlResults[prop].custbody_rsc_indice),
                                 fator_correcao_3: fatorCorrecao(split_ultimaAtualizacao[1], 'anterior2', sqlResults[prop].custbody_rsc_indice, split_ultimaAtualizacao[2]),
                                 fator_correcao_atual: fatorCorrecao(obj_ultimaAtualizacao.mes, 'atual', sqlResults[prop].custbody_rsc_indice),
                                 moratorios: mj.acrescimosMoratorios
@@ -1299,7 +1283,7 @@ function localizarParcelas(idFatura) {
                                     indice: sqlResults[prop].custbody_rsc_indice,
                                     ultimaAtualizacao: sqlResults[prop].custbody_rsc_ultima_atualizacao,
                                     fator_correcao_2: fatorCorrecao(hoje.mes, 'anterior2', sqlResults[prop].custbody_rsc_indice),
-                                    fator_correcao_3_parcela: fatorCorrecao(hoje.mes, 'anterior3', sqlResults[prop].custbody_rsc_indice),
+                                    // fator_correcao_3: fatorCorrecao(hoje.mes, 'anterior3', sqlResults[prop].custbody_rsc_indice),
                                     fator_correcao_3: fatorCorrecao(split_ultimaAtualizacao[1], 'anterior2', sqlResults[prop].custbody_rsc_indice, split_ultimaAtualizacao[2]),
                                     fator_correcao_atual: fatorCorrecao(hoje.mes, 'atual', sqlResults[prop].custbody_rsc_indice),
                                     moratorios: mj.acrescimosMoratorios
@@ -1364,7 +1348,6 @@ function remold(array) {
                     indice: array[prop].indice,
                     ultimaAtualizacao: array[prop].ultimaAtualizacao,
                     fator_correcao_2: array[prop].fator_correcao_2,
-                    fator_correcao_3_parcela: array[prop].fator_correcao_3_parcela,
                     fator_correcao_3: array[prop].fator_correcao_3,
                     fator_correcao_atual: array[prop].fator_correcao_atual,
                     moratorios: array[prop].moratorios
@@ -1387,7 +1370,6 @@ function remold(array) {
                 indice: array[prop].indice,
                 ultimaAtualizacao: array[prop].ultimaAtualizacao,
                 fator_correcao_2: array[prop].fator_correcao_2,
-                fator_correcao_3_parcela: array[prop].fator_correcao_3_parcela,
                 fator_correcao_3: array[prop].fator_correcao_3,
                 fator_correcao_atual: array[prop].fator_correcao_atual,
                 moratorios: array[prop].moratorios
@@ -3083,7 +3065,7 @@ const gerarSublistaInadimplentes = (form, id, nome, arrayParcelas, numeroParcela
                     sublista.setSublistValue({
                         id: parcela.id, // Primeiro Vencimento
                         line: i,
-                        value: primeiroVencimento ? primeiroVencimento : vencimentoEntrada
+                        value: primeiroVencimento
                     });               
                     
                     sublista.setSublistValue({
@@ -3113,27 +3095,10 @@ const gerarSublistaInadimplentes = (form, id, nome, arrayParcelas, numeroParcela
                             value: date
                         });
                     } else {
-                        // sublista.setSublistValue({
-                        //     id: parcela.id, // Vencimento Entrada
-                        //     line: i,
-                        //     value: vencimentoEntrada
-                        // });
-
-                        var splitVE = vencimentoEntrada.split('/');        
-                        var novoVencimento = new Date(splitVE[2], splitVE[1] - 1, splitVE[0]);    
-    
-                        let date = vencimentosMensais({
-                            'novoVencimento': novoVencimento,
-                            'meses': i-1,
-                            'anterior': i-2
-                        });
-                        
-                        novoVencimento.setMonth(novoVencimento.getMonth()+i);
-    
                         sublista.setSublistValue({
                             id: parcela.id, // Primeiro Vencimento
                             line: i,
-                            value: date
+                            value: vencimentoEntrada
                         });
                     }
                     
@@ -3603,27 +3568,10 @@ const gerarSublistaAdimplentes = (form, id, nome, arrayParcelas, numeroParcelas,
                             value: date
                         });
                     } else {
-                        // sublista.setSublistValue({
-                        //     id: parcela.id, // Vencimento Entrada
-                        //     line: i,
-                        //     value: vencimentoEntrada
-                        // });
-
-                        var splitVE = vencimentoEntrada.split('/');        
-                        var novoVencimento = new Date(splitVE[2], splitVE[1] - 1, splitVE[0]);    
-    
-                        let date = vencimentosMensais({
-                            'novoVencimento': novoVencimento,
-                            'meses': i-1,
-                            'anterior': i-2
-                        });
-                        
-                        novoVencimento.setMonth(novoVencimento.getMonth()+i);
-    
                         sublista.setSublistValue({
                             id: parcela.id, // Primeiro Vencimento
                             line: i,
-                            value: date
+                            value: vencimentoEntrada
                         });
                     }
                     

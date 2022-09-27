@@ -76,7 +76,7 @@ const contratoFI = (fi) => {
         columns: [fi.campo]
     });
 
-    if (fi.campo == 'tranid' || fi.campo == 'duedate') {
+    if (fi.campo == 'tranid') {
         return bscFI[fi.campo];
     }
 
@@ -204,8 +204,7 @@ const enviarMinutaBoleto = (ordem) => {
             'Valor Parc. (R$)': Number(loadReg.getSublistValue('recmachcustrecord_rsc_resumo', 'custrecord_rsc_valor_parcela', i)).toFixed(2),
             'Total Princ.': Number(loadReg.getSublistValue('recmachcustrecord_rsc_resumo', 'custrecord_rsc_valor_atualizado_parcela', i)).toFixed(2),
             'Pro Rata': Number(loadReg.getSublistValue('recmachcustrecord_rsc_resumo', 'custrecord_rsc_prorata', i)).toFixed(2),
-            // '1º Vencimento': loadReg.getSublistText('recmachcustrecord_rsc_resumo', 'custrecord_rsc_vencimento_parcela', i),
-            '1º Vencimento': contratoFI({id: loadReg.getSublistValue('recmachcustrecord_rsc_resumo', 'custrecord_rsc_parcela_contrato', i), campo: 'duedate'}),
+            '1º Vencimento': loadReg.getSublistText('recmachcustrecord_rsc_resumo', 'custrecord_rsc_vencimento_parcela', i),
             // 'Juros': jurosMulta > 0 ? 'Sim' : 'Não',
             'Juros': loadReg.getSublistText('recmachcustrecord_rsc_resumo', 'custrecord_rsc_datajuros', i) ? 'Sim' : 'Não',
             'Dt Juros': loadReg.getSublistText('recmachcustrecord_rsc_resumo', 'custrecord_rsc_datajuros', i)

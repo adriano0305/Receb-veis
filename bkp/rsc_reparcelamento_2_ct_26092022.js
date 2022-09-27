@@ -379,16 +379,16 @@ function simulacao(ordem) {
 
     const reparcelarEm = registroAtual.getValue({fieldId: custPage+'reparcelar_em'});
 
-    // if (!primeiroVencimento) {
-    //     if (renegociacao == 'Amortização' || ((renegociacao == 'Adimplentes' || renegociacao == 'Inadimplentes') && reparcelarEm > 0)) {
-    //         dialog.alert({
-    //             title: 'Aviso!',
-    //             message: 'Selecione o 1º Vencimento.'
-    //         });
+    if (!primeiroVencimento) {
+        if (renegociacao == 'Amortização' || ((renegociacao == 'Adimplentes' || renegociacao == 'Inadimplentes') && reparcelarEm > 0)) {
+            dialog.alert({
+                title: 'Aviso!',
+                message: 'Selecione o 1º Vencimento.'
+            });
             
-    //         return false;
-    //     }
-    // } 
+            return false;
+        }
+    } 
 
     if (validarDataVencimento(primeiroVencimento) == false) {
         dialog.alert({
@@ -566,14 +566,9 @@ function simulacao(ordem) {
                     fieldId: custPage+'fator_correcao_2',
                     line: i
                 }),
-                fator_correcao_3_parcela: registroAtual.getSublistValue({
-                    sublistId: listaParcelas,
-                    fieldId: custPage+'fator_correcao_3_parcela', // índice de defasagem de 3 meses da parcela
-                    line: i
-                }),
                 fator_correcao_3: registroAtual.getSublistValue({
                     sublistId: listaParcelas,
-                    fieldId: custPage+'fator_correcao_3', // índice de defasagem de 2 meses (conforme última atualização)
+                    fieldId: custPage+'fator_correcao_3',
                     line: i
                 }),
                 fator_atual: registroAtual.getSublistValue({
@@ -604,28 +599,27 @@ function simulacao(ordem) {
         });
 
         return false;
-    } 
-    // else if (arrayParcelas.length > 1) {
-    //     if ((renegociacao == 'Adimplentes' || renegociacao == 'Inadimplentes')) {
-    //         if (!primeiroVencimento) {        
-    //             dialog.alert({
-    //                 title: 'Aviso!',
-    //                 message: 'Selecione o 1º Vencimento.'
-    //             });
+    } else if (arrayParcelas.length > 1) {
+        if ((renegociacao == 'Adimplentes' || renegociacao == 'Inadimplentes')) {
+            if (!primeiroVencimento) {        
+                dialog.alert({
+                    title: 'Aviso!',
+                    message: 'Selecione o 1º Vencimento.'
+                });
                 
-    //             return false;
-    //         }
+                return false;
+            }
 
-    //         if (reparcelarEm == 0) {        
-    //             dialog.alert({
-    //                 title: 'Aviso!',
-    //                 message: 'Número de Parcelas deve ser maior que zero.'
-    //             });
+            if (reparcelarEm == 0) {        
+                dialog.alert({
+                    title: 'Aviso!',
+                    message: 'Número de Parcelas deve ser maior que zero.'
+                });
                 
-    //             return false;
-    //         }
-    //     }
-    // }
+                return false;
+            }
+        }
+    }
 
     var json = {
         id: registroAtual.getValue({fieldId: custPage+'id_fatura_principal'}),
@@ -963,7 +957,7 @@ function campanhaDesconto(data, valor, empreendimento) {
 
 // Pro Rata Inadimplentes
 function calcularProRata2(reneg, dt1, dt2, registroAtual, dt3, am) {    
-    console.log('calcularProRata2', JSON.stringify({dt1: dt1, dt2: dt2, registroAtual: registroAtual, dt3: dt3, am: am}));
+    console.log('calcularProRata2', {dt1: dt1, dt2: dt2, registroAtual: registroAtual, dt3: dt3, am: am});
     const listaParcelas = custPage+'sublista_lista_parcelas';
     
     var vencimentoEntrada = {
@@ -1019,11 +1013,6 @@ function calcularProRata2(reneg, dt1, dt2, registroAtual, dt3, am) {
         
         // var fator_anterior3 = fatorCorrecao(vencimentoEntrada.mes, 'anterior3', dt.indice);
         // var fator_anterior3 = fatorCorrecao(hoje.mes, 'anterior3', dt.indice);
-        var fator_anterior3_parcela = dt.fator_correcao_3_parcela;
-        // console.log('fator_anterior3: '+fator_anterior3, 'typeof: '+typeof(fator_anterior3));
-        
-        // var fator_anterior3 = fatorCorrecao(vencimentoEntrada.mes, 'anterior3', dt.indice);
-        // var fator_anterior3 = fatorCorrecao(hoje.mes, 'anterior3', dt.indice);
         var fator_anterior3 = dt.fator_correcao_3;
         // console.log('fator_anterior3: '+fator_anterior3, 'typeof: '+typeof(fator_anterior3));
         
@@ -1038,32 +1027,19 @@ function calcularProRata2(reneg, dt1, dt2, registroAtual, dt3, am) {
         var parcela_selecionada, parcela_atualizada, difDias, proRata;
     
         if (reneg == 'Inadimplentes' || reneg == 'Adimplentes' || reneg == 'Recálculo de atrasos' || reneg == 'Antecipação') {
-            // parcela_selecionada = registroAtual.getSublistValue({
-            //     sublistId: listaParcelas,
-            //     fieldId: custPage+'valor_original',
-            //     line: linhaParcela
-            //     // line: linhaParcela-1
-            // }) + Number(am);
-            // console.log('parcela_selecionada: '+parcela_selecionada, 'typeof: '+typeof(parcela_selecionada));
-
             parcela_selecionada = registroAtual.getSublistValue({
                 sublistId: listaParcelas,
                 fieldId: custPage+'valor_original',
                 line: linhaParcela
                 // line: linhaParcela-1
-            }) + dt.atualizacaoMonetaria;
-            console.log('parcela_selecionada: '+parcela_selecionada, 'typeof: '+typeof(parcela_selecionada), 'atualizacaoMonetaria: '+dt.atualizacaoMonetaria);
+            }) + Number(am);
+            console.log('parcela_selecionada: '+parcela_selecionada, 'typeof: '+typeof(parcela_selecionada));
             
             if (fator_anterior2 > 0 && fator_anterior3 > 0) {
-                // parcela_atualizada = reneg == 'Recálculo de atrasos' ? 
-                // Number((((fator_anterior2 / fator_anterior3) - 1) * parcela_selecionada) + parcela_selecionada).toFixed(6) : 
-                // Number((((fator_anterior2 / fator_anterior3) - 1) * parcela_selecionada) + parcela_selecionada).toFixed(6)
-                // Number((fator_anterior2 / fator_anterior3) * parcela_selecionada).toFixed(2);  
-                
                 parcela_atualizada = reneg == 'Recálculo de atrasos' ? 
-                Number((((fator_anterior2 / fator_anterior3_parcela) - 1) * parcela_selecionada) + parcela_selecionada).toFixed(6) : 
-                Number((((fator_anterior2 / fator_anterior3_parcela) - 1) * parcela_selecionada) + parcela_selecionada).toFixed(6)
-                // Number((fator_anterior2 / fator_anterior3_parcela) * parcela_selecionada).toFixed(2); 
+                Number((((fator_anterior2 / fator_anterior3) - 1) * parcela_selecionada) + parcela_selecionada).toFixed(6) : 
+                Number((((fator_anterior2 / fator_anterior3) - 1) * parcela_selecionada) + parcela_selecionada).toFixed(6)
+                // Number((fator_anterior2 / fator_anterior3) * parcela_selecionada).toFixed(2);               
             } else {
                 parcela_atualizada = 0;
             }
@@ -1076,7 +1052,7 @@ function calcularProRata2(reneg, dt1, dt2, registroAtual, dt3, am) {
                 } else {
                     proRata = 0; 
                 }
-                console.log('return 1', JSON.stringify({linhaParcela: linhaParcela, difDias: difDias, proRata: Math.abs(proRata)})); 
+                console.log('return 1', {linhaParcela: linhaParcela, difDias: difDias, proRata: Math.abs(proRata)}); 
 
                 dt.calculoPR = {difDias: difDias, proRata: Math.abs(proRata)}
                 
@@ -1171,7 +1147,6 @@ function atualizacaoMonetaria(reneg, dt1, dt2) {
             // fator_anterior3 = fatorCorrecao(primeiroVencimento.mes, 'anterior3', indice); 
             if (fator_anterior2 > 0 && fator_anterior3 > 0) {
                 valor_atualizacao_monetaria = valor_atualizacao_monetaria + (((fator_anterior2 / fator_anterior3) - 1) * valor);
-                dt2[i].atualizacaoMonetaria = ((fator_anterior2 / fator_anterior3) - 1) * valor;                
             }
         }
     }      
@@ -1182,7 +1157,7 @@ function atualizacaoMonetaria(reneg, dt1, dt2) {
 
 // Pro Rata Amortização
 function calcularProRata(reneg, dt1, dt2, registroAtual, dt3, am) {    
-    console.log('calcularProRata', JSON.stringify({dt1: dt1, dt2: dt2, registroAtual: registroAtual, dt3: dt3, am: am}));
+    console.log('calcularProRata', {dt1: dt1, dt2: dt2, registroAtual: registroAtual, dt3: dt3, am: am});
     const listaParcelas = custPage+'sublista_lista_parcelas';
     
     var primeiroVencimento = {
@@ -1232,11 +1207,6 @@ function calcularProRata(reneg, dt1, dt2, registroAtual, dt3, am) {
     // const fator_anterior2 = fatorCorrecao(hoje.mes, 'anterior2', dt2[0].indice);
     const fator_anterior2 = dt2[0].fator_correcao_2;
     // console.log('fator_anterior2: '+fator_anterior2, 'typeof: '+typeof(fator_anterior2));
-
-    // const fator_anterior3 = fatorCorrecao(primeiroVencimento.mes, 'anterior3', dt2[0].indice);
-    // const fator_anterior3 = fatorCorrecao(hoje.mes, 'anterior3', dt2[0].indice);
-    const fator_anterior3_parcela = dt2[0].fator_correcao_3_parcela;
-    // console.log('fator_anterior3: '+fator_anterior3, 'typeof: '+typeof(fator_anterior3));
     
     // const fator_anterior3 = fatorCorrecao(primeiroVencimento.mes, 'anterior3', dt2[0].indice);
     // const fator_anterior3 = fatorCorrecao(hoje.mes, 'anterior3', dt2[0].indice);
@@ -1260,13 +1230,12 @@ function calcularProRata(reneg, dt1, dt2, registroAtual, dt3, am) {
             line: linhaParcela
             // line: linhaParcela-1
         }) + Number(am);
-        // // console.log('parcela_selecionada: '+parcela_selecionada, 'typeof: '+typeof(parcela_selecionada));
+        // console.log('parcela_selecionada: '+parcela_selecionada, 'typeof: '+typeof(parcela_selecionada));
         
         if (fator_anterior2 > 0 && fator_anterior3 > 0) {
             // parcela_atualizada = Number((fator_anterior2 / fator_anterior3) * parcela_selecionada).toFixed(6);  
             // parcela_atualizada = Number(((fator_anterior2 / fator_anterior3) - 1) * parcela_selecionada).toFixed(6); 
-            // parcela_atualizada = Number((((fator_anterior2 / fator_anterior3) - 1) * parcela_selecionada) + parcela_selecionada).toFixed(6);  
-            parcela_atualizada = Number((((fator_anterior2 / fator_anterior3_parcela) - 1) * parcela_selecionada) + parcela_selecionada).toFixed(6);            
+            parcela_atualizada = Number((((fator_anterior2 / fator_anterior3) - 1) * parcela_selecionada) + parcela_selecionada).toFixed(6);          
         } else {
             parcela_atualizada = 0;
         }

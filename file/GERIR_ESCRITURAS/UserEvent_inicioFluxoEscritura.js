@@ -261,7 +261,7 @@ define(["require", "exports", "N/record", "N/search", "N/log", "./ClientScript_f
                                 });
                                 newControleEscrituracao.setValue({
                                     fieldId: 'name',
-                                    value: 'Controle Escritura da Fatura #' + newCreatedFaturaRecord.getValue('tranid')
+                                    value: 'Controle Escrituração (Pedido #' + newCreatedFaturaRecord.getValue('tranid') + ')'
                                 });
                                 newControleEscrituracao.setValue({
                                     fieldId: 'custrecord_lrc_fatura_de_venda',

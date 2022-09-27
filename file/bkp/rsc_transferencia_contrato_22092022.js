@@ -112,7 +112,7 @@ const transferirContrato = (dados) => {
         console.log('escrituracao', escrituracao);
 
         loadContrato.setValue('entity', dados.custrecord_rsc_novo_cliente.value);
-        // loadContrato.setValue('custbody_rsc_status_contrato', dados.custbody_rsc_status_contrato);
+        loadContrato.setValue('custbody_rsc_status_contrato', dados.custbody_rsc_status_contrato);
 
         for (i=0; i<loadContrato.getLineCount('item'); i++) {
             loadContrato.selectLine('item', i);
@@ -205,27 +205,6 @@ const parcelaUnica = (dados) => {
         });
         console.log('lookupContrato', JSON.stringify(lookupContrato));
 
-        const subsidiaria = (nome) => {
-            var mySubsidiaryQuery = query.create({type: 'subsidiary'});
-
-            var condicao1 = mySubsidiaryQuery.createCondition({fieldId: 'name', operator: query.Operator.ANY_OF, values: nome});
-
-            mySubsidiaryQuery.condition = mySubsidiaryQuery.and(condicao1);
-
-            mySubsidiaryQuery.columns = [
-                mySubsidiaryQuery.createColumn({fieldId: 'id'}),
-                mySubsidiaryQuery.createColumn({fieldId: 'name'})
-            ];
-
-            var resultSet = mySubsidiaryQuery.run();
-            console.log(JSON.stringify(resultSet));
-
-            var results = resultSet.results;
-            console.log(JSON.stringify(results));
-
-            return results[0].values[0];
-        }
-
         var camposFI = {
             // Informações Principais
             entity: dados.custrecord_rsc_novo_cliente.value, 
@@ -237,8 +216,7 @@ const parcelaUnica = (dados) => {
             // custbody_rsc_projeto_obra_gasto_compra: dados.custrecord_rsc_empreendimento,
             custbody_lrc_fatura_principal: dados.custrecord_rsc_contrato,
             custbody_rsc_tipo_transacao_workflow: 102,
-            // subsidiary: lookupContrato.subsidiary.length > 0 ? lookupContrato.subsidiary[0].value : '',
-            subsidiary: subsidiaria('GAFISA S/A.'),
+            subsidiary: lookupContrato.subsidiary.length > 0 ? lookupContrato.subsidiary[0].value : '',
             location: lookupContrato.location.length > 0 ? lookupContrato.location[0].value : '',
             class: lookupContrato.class.length > 0 ? lookupContrato.class[0].value : '',
             department: lookupContrato.department.length > 0 ? lookupContrato.department[0].value : '',

@@ -744,6 +744,7 @@ define(["require", "exports", "N/search", "N/record", "N/currentRecord", "N/runt
         
         var attMonetariaAcumulada = valorVendaAtt - valorVenda;
         var valorProRata = Number(getProRata(dataMesAnterior,distratoRecord.getValue('custrecord_rsc_contrato_distrato')).toFixed(2));
+        console.log('valorProRata', valorProRata);
         var contabilizacaoAprop = record_1.default.create({
             type: 'journalentry'
         });
@@ -778,6 +779,13 @@ define(["require", "exports", "N/search", "N/record", "N/currentRecord", "N/runt
             value: 'Soma dos valores valor da venda, atualização monetária acumulada e pro rata corrente, subtraidos do valor pago.'
         });
         somaCredit += (valorVenda + attMonetariaAcumulada + valorProRata) - valorPago;
+
+        console.log(JSON.stringify({
+            line: 0,
+            fieldId: 'credit',
+            value: (valorVenda + attMonetariaAcumulada + valorProRata) - valorPago
+        }));
+
         contabilizacaoAprop.setSublistValue({
             sublistId: 'line',
             fieldId: 'account',
@@ -797,6 +805,13 @@ define(["require", "exports", "N/search", "N/record", "N/currentRecord", "N/runt
             value: 'Valor acordado para devolução'
         });
         somaCredit += valorDevolucao;
+
+        console.log(JSON.stringify({
+            line: 1,
+            fieldId: 'credit',
+            value: valorDevolucao
+        }));
+
         contabilizacaoAprop.setSublistValue({
             sublistId: 'line',
             fieldId: 'account',
@@ -816,6 +831,13 @@ define(["require", "exports", "N/search", "N/record", "N/currentRecord", "N/runt
             value: 'Valor acordado para devolução'
         });
         somaCredit += valorDevolucao;
+
+        console.log(JSON.stringify({
+            line: 2,
+            fieldId: 'credit',
+            value: valorDevolucao
+        }));
+
         contabilizacaoAprop.setSublistValue({
             sublistId: 'line',
             fieldId: 'account',
@@ -835,6 +857,13 @@ define(["require", "exports", "N/search", "N/record", "N/currentRecord", "N/runt
             value: 'Valor acordado para devolução'
         });
         somaDebit += valorDevolucao;
+
+        console.log(JSON.stringify({
+            line: 3,
+            fieldId: 'debit',
+            value: valorDevolucao
+        }));
+
         contabilizacaoAprop.setSublistValue({
             sublistId: 'line',
             fieldId: 'account',
@@ -854,6 +883,13 @@ define(["require", "exports", "N/search", "N/record", "N/currentRecord", "N/runt
             value: 'Valor da venda'
         });
         somaDebit += valorVenda;
+
+        console.log(JSON.stringify({
+            line: 4,
+            fieldId: 'debit',
+            value: valorVenda
+        }));
+
         contabilizacaoAprop.setSublistValue({
             sublistId: 'line',
             fieldId: 'account',
@@ -873,6 +909,13 @@ define(["require", "exports", "N/search", "N/record", "N/currentRecord", "N/runt
             value: 'Atualização monetária acumulada'
         });
         somaDebit += attMonetariaAcumulada;
+
+        console.log(JSON.stringify({
+            line: 5,
+            fieldId: 'debit',
+            value: attMonetariaAcumulada
+        }));
+
         contabilizacaoAprop.setSublistValue({
             sublistId: 'line',
             fieldId: 'account',
@@ -898,6 +941,13 @@ define(["require", "exports", "N/search", "N/record", "N/currentRecord", "N/runt
             value: true
         });
         somaDebit += valorPago;
+
+        console.log(JSON.stringify({
+            line: 6,
+            fieldId: 'debit',
+            value: valorPago
+        }));
+
         contabilizacaoAprop.setSublistValue({
             sublistId: 'line',
             fieldId: 'account',
@@ -917,6 +967,13 @@ define(["require", "exports", "N/search", "N/record", "N/currentRecord", "N/runt
             value: 'Valor Pago'
         });
         somaCredit += valorPago;
+        
+        console.log(JSON.stringify({
+            line: 7,
+            fieldId: 'debit',
+            value: valorPago
+        }));
+
         contabilizacaoAprop.setSublistValue({
             sublistId: 'line',
             fieldId: 'account',
@@ -942,6 +999,13 @@ define(["require", "exports", "N/search", "N/record", "N/currentRecord", "N/runt
             value: 'Valor do pro rata do mês corrente'
         });
         somaDebit += valorProRata;
+
+        console.log(JSON.stringify({
+            line: 8,
+            fieldId: 'debit',
+            value: valorProRata
+        }));
+        
         contabilizacaoAprop.setSublistValue({
             sublistId: 'line',
             fieldId: 'account',
@@ -984,6 +1048,13 @@ define(["require", "exports", "N/search", "N/record", "N/currentRecord", "N/runt
             //     value:attMonetariaAcumulada
             // })
         }
+
+        console.log(JSON.stringify({
+            line: 9,
+            fieldId: 'debit or credit',
+            value: valorPago - valorDevolucao
+        }));
+
         console.log('Soma Debito', somaDebit)
         console.log('Soma Credito', somaCredit)
         var contApropID = contabilizacaoAprop.save({

@@ -467,7 +467,7 @@ const implantacao = () => {
             custrecord_rsc_perc_multa: bscCD[0].getValue('custrecord_rsc_perc_multa').replace('%', ''),
             recmachcustrecord_rsc_transferencia_posse: arrayParcelas,
             customrecord_rsc_cd_novos_proponentes: arrayProponentes,
-            // custbody_rsc_status_contrato: 4 // Transferido
+            custbody_rsc_status_contrato: 4 // Transferido
         }
         console.log('json', JSON.stringify(json));
 

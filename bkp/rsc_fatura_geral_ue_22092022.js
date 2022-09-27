@@ -75,10 +75,10 @@ const localizarParcelas = (idFatura) => {
     "WHERE t.recordtype = 'invoice' "+
     "AND t.voided = 'F' "+
     "AND t.custbody_lrc_fatura_principal = ? "+
-    "AND tl.rate IS NOT NULL "+
-    "AND tl.item != 5 "+
+    // "AND tl.rate IS NOT NULL "+
+    // "AND tl.item != 5 "+
     "ORDER BY t.duedate ASC";
-    log.audit('sql localizarParcelas', sql);
+    log.audit('sql', sql);
 
     var consulta = query.runSuiteQL({
         query: sql,
@@ -302,7 +302,7 @@ const localizarParcelas = (idFatura) => {
         }
 
         for (var prop in sqlResults) {
-            if (sqlResults[prop].status !== 'V' && sqlResults[prop].duedate) {
+            if (sqlResults[prop].status !== 'V') {
                 var parcelaVencida = validarVencimento(sqlResults[prop].duedate);
 
                 var mj;
@@ -446,7 +446,7 @@ const localizarParcelas = (idFatura) => {
 }
 
 const validarVencimento = (duedate) => {
-    log.audit('validarVencimento', duedate);
+    // log.audit('validarVencimento', duedate);
 
     const hoje = new Date();
 
@@ -546,50 +546,6 @@ const validarVencimento2 = (shipdate, duedate) => {
             status: false
         }
     }
-}
-
-const assignment_of_rights = (idPedido) => {
-    log.audit('assignment_of_rights', idPedido);
-
-    var statusCD = 4;
-
-    var sql = "SELECT id, custrecord_rsc_contrato, custrecord_rsc_status_cessao "+
-    "FROM customrecord_rsc_perc_cessao_direito "+
-    "WHERE custrecord_rsc_contrato = ? "+
-    "AND custrecord_rsc_status_cessao != ? ";
-    log.audit('sql assignment_of_rights', sql);
-
-    var consulta = query.runSuiteQL({
-        query: sql,
-        params: [idPedido, statusCD]
-    });
-
-    var sqlResults = consulta.asMappedResults(); 
-    log.audit('sqlResults assignment_of_rights', sqlResults);
-
-    return sqlResults; 
-}
-
-const distraction = (idPedido) => {
-    log.audit('distraction', idPedido);
-
-    var statusD = 4;
-
-    var sql = "SELECT id, custrecord_rsc_contrato_distrato, custrecord_rsc_status_distrato "+
-    "FROM customrecord_rsc_escritura_distrato "+
-    "WHERE custrecord_rsc_contrato_distrato = ? "+
-    "AND custrecord_rsc_status_distrato != ? ";
-    log.audit('sql distraction', sql);
-
-    var consulta = query.runSuiteQL({
-        query: sql,
-        params: [idPedido, statusD]
-    });
-
-    var sqlResults = consulta.asMappedResults(); 
-    log.audit('sqlResults distraction', sqlResults);
-
-    return sqlResults;    
 }
 
 const sublista_fluxoPagamentos = (form, idFatura) => {
@@ -1267,36 +1223,25 @@ const beforeLoad = (context) => {
     if (novoRegistro.id) {
         form.clientScriptFileId = 9932; // RSC Fatura Geral CT
 
-        var ed = distraction(novoRegistro.id); // ed = Escritura Distrato
-        var cd = assignment_of_rights(novoRegistro.id); // cd = cessão de direito
-
         if (orderStatus == 'H') {
             if (tipoTransacaoWF == 24) { // PV - Contrato
-                // Cessão de Direitos ainda não implantada ou um Distrato de qualquer status
-                if (cd.length > 0 || ed.length > 0) {
-                    log.audit('CD ou ED localizadas!', 'Não exibir os botões "Renegociação" e "Distrato".');
-                } else {
-                    form.addButton({
-                        id: custPage+'reparcelamento_2',
-                        label: 'Renegociação',
-                        functionName: 'clientForSuitelet'
-                    });
-
-                    form.addButton({
-                        id: custPage+'distrato',
-                        label: 'Distrato',
-                        functionName: 'distrato'
-                    });
-                }       
-
-                // Distrato ativo para o Contrato;
-                if (ed.length == 0) {
-                    form.addButton({
-                        id: custPage+'cessao_direito',
-                        label: 'Cessão de Direitos',
-                        functionName: 'cessaoDireito'
-                    });
-                }                              
+                form.addButton({
+                    id: custPage+'reparcelamento_2',
+                    label: 'Renegociação',
+                    functionName: 'clientForSuitelet'
+                });
+                
+                form.addButton({
+                    id: custPage+'cessao_direito',
+                    label: 'Cessão de Direitos',
+                    functionName: 'cessaoDireito'
+                });
+        
+                form.addButton({
+                    id: custPage+'distrato',
+                    label: 'Distrato',
+                    functionName: 'distrato'
+                });
             }             
         } else {
             if (tipoTransacaoWF == 22) { // PV - Proposta
