@@ -3,6 +3,7 @@
  * @NScriptType UserEventScript
  */
 const custPage = 'custpage_rsc_';
+const nomeArquivo = "rsc_fatura_cessao_direito_ct.js";
 
 const opcoes = {
     enablesourcing: true,
@@ -178,6 +179,21 @@ function atualizarTransacao(tipo, idInterno, valores) {
     }
 }
 
+const clientScript = () => {
+    var bscArquivo = search.create({type: "folder",
+        filters: [
+           ["file.name","is",nomeArquivo]
+        ],
+        columns: [
+           search.createColumn({name: "internalid", join: "file", label: "ID interno"}),
+           search.createColumn({name: "name", join: "file", label: "Nome"})
+        ]
+    }).run().getRange(0,1);
+    // log.audit('bscArquivo', bscArquivo);
+
+    return bscArquivo.length > 0 ? bscArquivo[0].getValue({name: "internalid", join: "file"}) : '';
+}
+
 const afterSubmit = (context) => {
     log.audit('afterSubmit', context);
 
@@ -202,7 +218,9 @@ const afterSubmit = (context) => {
             campos.custbody_rsc_status_contrato = 2; // Contrato 
         }
 
-        atualizarTransacao('salesorder', contrato, campos);
+        if (campos.custbody_rsc_status_contrato) {
+            atualizarTransacao('salesorder', contrato, campos);
+        }        
     }    
 }
 
@@ -219,60 +237,68 @@ const beforeLoad = (context) => {
 
     const form = context.form;
 
-    form.clientScriptFileId = 10973; // rsc_fatura_cessao_direito_ct.js
+    // form.clientScriptFileId = 10973; // rsc_fatura_cessao_direito_ct.js
 
-    if (context.type == 'view' && statusCessao == 2 && !taxaCD) {
-        form.addButton({
-            id: custPage+'implantacao',
-            label: 'Implantação',
-            functionName: 'implantacao'
-        });
+    form.clientScriptFileId = clientScript(); // GAF GE Controle Escrituração CT AR
+
+    if (context.type == 'view') {
+        // if (statusCessao == 2 && !taxaCD) {
+        //     form.addButton({
+        //         id: custPage+'implantacao',
+        //         label: 'Implantação',
+        //         functionName: 'implantacao'
+        //     });
+        // }
+
+        if (statusCessao == 1) {
+            if (!taxaCD) {
+                form.addButton({
+                    id: custPage+'aprovar',
+                    label: 'Aprovar',
+                    functionName: 'aprovar'
+                });
+            }           
+    
+            form.addButton({
+                id: custPage+'rejeitar',
+                label: 'Rejeitar',
+                functionName: 'rejeitar'
+            });
+        }
+    
+        if (statusCessao == 2) {
+            form.addButton({
+                id: custPage+'rejeitar',
+                label: 'Rejeitar',
+                functionName: 'rejeitar'
+            });
+        }
+    
+        if (statusCessao == 3) {
+            form.addButton({
+                id: custPage+'aprovar',
+                label: 'Aprovar',
+                functionName: 'aprovar'
+            });
+        }
+    
+        if (statusCessao == 2 || statusCessao == 4) {
+            form.addButton({
+                id: custPage+'enviar_cessao',
+                label: 'Enviar Cessão',
+                functionName: 'enviarCessao'
+            });
+    
+            form.addButton({
+                id: custPage+'imprimir_cessao',
+                label: 'Imprimir Cessão',
+                functionName: 'imprimirCessao'
+            });
+        }
+    
     }
 
-    if (statusCessao == 1) {
-        form.addButton({
-            id: custPage+'aprovar',
-            label: 'Aprovar',
-            functionName: 'aprovar'
-        });
-
-        form.addButton({
-            id: custPage+'rejeitar',
-            label: 'Rejeitar',
-            functionName: 'rejeitar'
-        });
-    }
-
-    if (statusCessao == 2) {
-        form.addButton({
-            id: custPage+'rejeitar',
-            label: 'Rejeitar',
-            functionName: 'rejeitar'
-        });
-    }
-
-    if (statusCessao == 3) {
-        form.addButton({
-            id: custPage+'aprovar',
-            label: 'Aprovar',
-            functionName: 'aprovar'
-        });
-    }
-
-    if (statusCessao == 2 || statusCessao == 4) {
-        form.addButton({
-            id: custPage+'enviar_cessao',
-            label: 'Enviar Cessão',
-            functionName: 'enviarCessao'
-        });
-
-        form.addButton({
-            id: custPage+'imprimir_cessao',
-            label: 'Imprimir Cessão',
-            functionName: 'imprimirCessao'
-        });
-    }
-
+    
     listaProponentes(form, contrato);
 }
 

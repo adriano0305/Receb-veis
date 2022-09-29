@@ -34,10 +34,15 @@ define(['N/log', 'N/record', "N/search",
                 //     VendorPaymentUserEvent.afterSubmit(context);
                 //     break;
 
-                 case 'salesorder' : 
-                     SalesOrderUserEvent.beforeSubmit(context);
-                     break;
+                case 'salesorder':
+                    SalesOrderUserEvent.beforeSubmit(context);
+                    break;
 
+                case 'purchaseorder':
+                        //Contas a pagar
+                    VendorBillUserEvent.beforeSubmit(context);
+                    break;
+    
                 // case 'customerpayment' : 
                 //     CustomerPaymentUserEvent.afterSubmit(context);
                 //     break;
@@ -51,12 +56,12 @@ define(['N/log', 'N/record', "N/search",
         }
         const afterSubmit = (context) => {
             let ctx = context;
-            log.debug("Running aftersubmit ", " ****** "+ctx.type+"  " + context.newRecord.type + " - " + context.type + " ******* ");
+            log.debug("Running aftersubmit ", " ****** " + ctx.type + "  " + context.newRecord.type + " - " + context.type + " ******* ");
 
             //run only on Create and edit and line edition
             if (ctx.type == ctx.UserEventType.CREATE || ctx.type == ctx.UserEventType.EDIT || ctx.type == ctx.UserEventType.XEDIT || ctx.type == ctx.UserEventType.DELETE) {
                 let newRecord = ctx.newRecord;
-                
+
                 //seta data da ultima atualizacao para todas as transacoes
                 newRecord.setValue({
                     fieldId: 'custbody_rsc_gesplan_lastmodifdate_dt',
@@ -172,7 +177,7 @@ define(['N/log', 'N/record', "N/search",
                         dtvcto: invoice.inv_duedate,
                         dtpgto: "",
                         pagto_aplicado: (invoice.inv_status == 'B') ? true : false,
-                        status: invoice.inv_status + ") " + invoice.status_parcela,
+                        status: invoice.inv_status + " " + invoice.status_parcela,
                         idpgto: ""
                     }
 
@@ -191,20 +196,16 @@ define(['N/log', 'N/record', "N/search",
                 log.debug("SalesOrderUserEvent.beforeSubmit", " context :" + JSON.stringify(context));
 
                 const salesOrder = context.newRecord;
-
                 const soItemListReader = new gesplanTools.SublistReader(gesplanTools.SUBLISTNAME.item, salesOrder);
                 let soItemList = soItemListReader.read();
-
                 const soInstalmentSublistReader = new gesplanTools.InstalmentSublistReader(salesOrder);
                 //const soInstalmentSublistReader = new gesplanTools.SublistReader(gesplanTools.SUBLISTNAME.instalment, salesOrder);
                 let soInstalmentList = soInstalmentSublistReader.read();
-
                 log.audit("Qtde Parcelas (default reader): " + soInstalmentList.length);
-
                 if (!soInstalmentList || soInstalmentList.length == 0) {
                     soInstalmentSublistReader.setBuilder(new SalesOrderInstalmentSublistBuilder(salesOrder));
                     soInstalmentList = soInstalmentSublistReader.read();
-                    log.audit("Qtde Parcelas (Invoice): " + soInstalmentList.length);
+                    //log.audit("Qtde Parcelas (Invoice): " + soInstalmentList.length);
                 }
                 //let vbInstalmentList = vbInstalmentSublistReader.read();
 
@@ -218,16 +219,83 @@ define(['N/log', 'N/record', "N/search",
 
                 //Usado quando o script executa no pagamento, ai chama se esse metodo para cada
                 //invoice da lista apply no customer payment.
-                if (context.hasOwnProperty('rsc_paymentDate')) {
-                    log.audit("Context contem data de pagamento. paymentDate: ", context.rsc_paymentDate);
-                    soInstalmentList.forEach((instalment, index, _vbInstalmentList) => {
-                        //log.debug('encontrou pagto aplicado? ', instalment.pagto_aplicado);
-                        if (instalment.pagto_aplicado == 'true') {
-                            //  log.debug('- ---- -- ', 'YESYESYES');
-                            instalment.dtpgto = context.rsc_paymentDate;
-                            //_vbInstalmentList[index] = instalment;
+                log.debug("Contem dados de pagamento?", context.hasOwnProperty('paymentData'));
+                
+                if (context.hasOwnProperty('paymentData')) {
+                    
+                    //for each invoice paid, get the respective instalment in soInstalmentList and update the instalment with the payment data.
+                    
+                    //log.debug("paymentData", "payment: "+JSON.stringify(context.paymentData));
+                    context.paymentData.forEach( (payment) => {
+                        
+                        let invoiceId = payment.invoiceId;
+                        let paymentId = payment.paymentId;
+                        let paymentAmount = payment.paymentAmount;
+                        let paymentDate = payment.paymentDate;
+
+                        log.debug("procurando por invoice(parcela)", "id: "+invoiceId);
+                        //        
+                        // let instalmentIndex = soInstalmentList.findIndex((instalment,index,array) => {
+                        //     return (instalment.seq === invoiceId);
+                        // });
+                        //log.debug('instalment before payment update', JSON.stringify(instalment));
+                        //log.debug('instalment index found', instalmentIndex);
+                        let instalment = soInstalmentList.find((instmnt) => {
+                             return (instmnt.seq == invoiceId);
+                        });
+                        
+                        if(instalment){
+                            log.debug('invoice(parcela) '+invoiceId+' encontrada', 'dados da parcela: '+JSON.stringify(instalment));
+
+                                
+                            //     seq: 568414,
+                            //     valordevido: 9091.9,
+                            //     valor: 9091.9,
+                            //     valorpago: "",
+                            //     dtvcto: "24/09/2022",
+                            //     dtpgto: "",
+                            //     pagto_aplicado: true,
+                            //     status: "B Invoice : Paid In Full",
+                            //     idpgto: ""
+                            //
+                            
+                            // instalment.seq = instalment.seq;
+                            instalment.valordevido = parseFloat(instalment.valordevido) - parseFloat(paymentAmount);
+                            instalment.valor = instalment.valor;
+                            instalment.valorpago = paymentAmount;
+                            // instalment.dtvcto = instalment.dtvcto; 
+                            instalment.dtpgto = paymentDate;
+                            instalment.pagto_aplicado = true;
+                            // instalment.status = instalment.status;
+                            instalment.idpgto = paymentId;
+                            
+                            
+                            // soInstalmentList[instalmentIndex].dtpgto = paymentDate;
+                            // soInstalmentList[instalmentIndex].valorpago = paymentAmount;
+                            // soInstalmentList[instalmentIndex].idpgto = paymentId;
+                            // soInstalmentList[instalmentIndex].pagto_aplicado = true;
+                            // soInstalmentList[instalmentIndex].status = "Pago";
+                            
                         }
+                        
+                        
+                        //start setting up soInstalmentList
                     });
+
+                    log.debug('Estado das parcelas após aplicacao de pagamento', JSON.stringify(soInstalmentList));
+                          
+                    //search into soInstalmentList the invoice that was paid.
+
+
+                    // log.audit("Context contem data de pagamento. paymentDate: ", '');
+                    // soInstalmentList.forEach((instalment, index, _vbInstalmentList) => {
+                    //     //log.debug('encontrou pagto aplicado? ', instalment.pagto_aplicado);
+                    //     if (instalment.pagto_aplicado == 'true') {
+                    //         //  log.debug('- ---- -- ', 'YESYESYES');
+                    //         instalment.dtpgto = context.rsc_paymentDate;
+                    //         //_vbInstalmentList[index] = instalment;
+                    //     }
+                    // });
                 }
 
                 //PREENCHE OS CAMPOS DE CORPO DA TRANSACAO COM O JSON. * START *    
@@ -349,7 +417,7 @@ define(['N/log', 'N/record', "N/search",
                 //if type equals delete, load the 
                 //vendor bill record and update the installment json field to the state
                 //before the vendor payment was deleted
-                if(context.type == 'delete'){
+                if (context.type == 'delete') {
 
                     const deleteApplySublistReader = new gesplanTools.ApplySubListReader(context.oldRecord);
                     //filtra as linhas que estão aplicadas
@@ -358,15 +426,15 @@ define(['N/log', 'N/record', "N/search",
                     deleteApplyedList.forEach((applyLine) => {
                         //carrega a vendor bill que foi selecionada (aplicada)
                         log.debug("vendorpayment applied bill", JSON.stringify(applyLine));
-                        let vendorBillRecord = nsRecord.load({type: 'vendorbill', id: applyLine.internalid, isDynamic: true});
+                        let vendorBillRecord = nsRecord.load({ type: 'vendorbill', id: applyLine.internalid, isDynamic: true });
                         VendorBillUserEvent.beforeSubmit(
-                        {
-                            newRecord: vendorBillRecord,
-                            
-                        });
+                            {
+                                newRecord: vendorBillRecord,
+
+                            });
                         vendorBillRecord.save({ ignoreMandatoryFields: true });
                     });
-                        return true;
+                    return true;
                 }
 
                 let itemList = [];
@@ -390,7 +458,7 @@ define(['N/log', 'N/record', "N/search",
                     // a mesma vendorbill está repetindo da sublista apply do vendorpayment.
                     if (lastInternalId != applyLine.internalid) {
                         const vendorBill = nsRecord.load({ type: 'vendorbill', id: applyLine.internalid, isDynamic: true });
-                        log.debug("atualizando vendorbill", vendorBill.recordType+' '+vendorBill.id +" vendorPaymentID "+vendPymtRecord.id+" paymentDate"+paymentDate);
+                        log.debug("atualizando vendorbill", vendorBill.recordType + ' ' + vendorBill.id + " vendorPaymentID " + vendPymtRecord.id + " paymentDate" + paymentDate);
                         //Chama o metodo beforeSubmit do vendorBill
                         //para setar os valores  nos campos json 
                         VendorBillUserEvent.beforeSubmit(
@@ -463,10 +531,10 @@ define(['N/log', 'N/record', "N/search",
                         vbInstalmentList.forEach((instalment, index, _vbInstalmentList) => {
                             log.debug('encontrou pagto aplicado? ', instalment.pagto_aplicado);
                             //if (instalment.pagto_aplicado == 'true') {
-                                //  log.debug('- ---- -- ', 'YESYESYES');
-                                instalment.dtpgto = context.rsc_paymentDate;
-                                instalment.idpgto = context.rsc_paymentId;
-                                //_vbInstalmentList[index] = instalment;
+                            //  log.debug('- ---- -- ', 'YESYESYES');
+                            instalment.dtpgto = context.rsc_paymentDate;
+                            instalment.idpgto = context.rsc_paymentId;
+                            //_vbInstalmentList[index] = instalment;
                             //}
                         });
                     }
@@ -482,10 +550,10 @@ define(['N/log', 'N/record', "N/search",
                     log.error('Erro ao executar VendorBillUserEvent.beforeSubmit', e);
                 }
                 log.debug("VendorBillUserEvent.beforeSubmit", ` *** end *** `);
-                    
+
             }
             static afterSubmit(context) {
-            
+
             }
 
         }
@@ -620,88 +688,127 @@ define(['N/log', 'N/record', "N/search",
                 // ler os campos JSON das customer payment  e verificar se estao preenchidos
                 //senao estiverem entao seta os campos
                 //tentar settar com submitfields que consome menos recursos
-                let itemList = [];
-                let instalmentList = [];
 
-                //carrega o vendor payment
-                const pymtRecord = context.newRecord;
-                const paymentDate = pymtRecord.getValue('trandate');
-
-                log.debug("CustomerPaymentUserEvent.afterSubmit", "customerpayment id: " + pymtRecord.id + " - " + pymtRecord.getValue('transactionnumber'));
+                if (context.type == 'delete') {
+                    log.debug("deleting", "delete payment id: " + context.oldRecord.id);
+                } else {
 
 
-                // //instancia o leitor da sublista apply
-                const applySublistReader = new gesplanTools.ApplySubListReader(pymtRecord);
-                // //filtra as linhas que estão aplicadas    
-                let applyedList = applySublistReader.readApplied();
-                // //corre as linhas apply aplicadas
-                let _uniqueSalesOrderIds = new Set();
-                let paymentData = [];
+                    let itemList = [];
+                    let instalmentList = [];
+
+                    //carrega o vendor payment
+                    const pymtRecord = context.newRecord;
+                   
+                    log.debug("CustomerPaymentUserEvent.afterSubmit", "customerpayment id: " + pymtRecord.id + " - " + pymtRecord.getValue('transactionnumber'));
 
 
-                //selecionar as invoices que foram aplicadas no pagamento,
-                //secionar as salesorders de cada invoice sem repetir (pode haver 2 ou mais invoices relacionadas ao mesmo salesorder)
-                //atualizar o campo instalment json, atualizar as parcelas com dtpgto, valor_pago e pagto_aplicado = true
-
-                applyedList.forEach((invoice, index, list) => {
-                    log.debug("CustomerPaymentUserEvent applied list", JSON.stringyfy(invoice));
-
-                    // //pega o id da salesorder(contrato) que gerou a invoice(parcela/instalment).
-                    // let soId = nsSearch.lookupFields({
-                    //     type: 'invoice',
-                    //     id: invoice.internalid,
-                    //     columns: ['custbody_lrc_fatura_principal']
-                    // }).custbody_lrc_fatura_principal[0].value;
-
-                    // log.debug("CustomerPaymentUserEvent aftersubmit", `Atualizar parcela (${invoice.internalid}) do pedido id: ${soId}`);
-                    // _uniqueSalesOrderIds.add(soId);
+                    // //instancia o leitor da sublista apply
+                    const applySublistReader = new gesplanTools.ApplySubListReader(pymtRecord);
+                    // //filtra as linhas que estão aplicadas    
+                    let applyedList = applySublistReader.readApplied();
+                    // //corre as linhas apply aplicadas
+                    //let _uniqueSalesOrderIds = new Set();
+                    let _uniqueInvoiceIds = new Set();
+                    let paymentData = [];
 
 
-                    /*
-                    
-                    if(paymentData[soId] == null) {
-                        paymentData[soId] = new Array();
-                    }
-                    paymentData[soId].push({
-                        seq : invoice.internalid,
-                        paymentId : pymtRecord.id,
-                        dtpgto : paymentDate,
-                        valor_pago : -1
+                    //selecionar as invoices que foram aplicadas no pagamento,
+                    //secionar as salesorders de cada invoice sem repetir (pode haver 2 ou mais invoices relacionadas ao mesmo salesorder)
+                    //atualizar o campo instalment json, 
+                    //atualizar as parcelas com dtpgto, valor_pago e pagto_aplicado = true
 
+                    applyedList.forEach((invoice, index, list) => {
+                        log.debug("CustomerPaymentUserEvent applied list "+index, JSON.stringify(invoice));
+                        _uniqueInvoiceIds.add(invoice.internalid);
+                        paymentData.push({
+                            invoiceId : invoice.internalid,
+                            paymentId : pymtRecord.id,
+                            paymentAmount : invoice.amount,
+                            paymentDate : pymtRecord.getValue('trandate'),
+                        })
+
+                        // //pega o id da salesorder(contrato) que gerou a invoice(parcela/instalment).
+                        // let soId = nsSearch.lookupFields({
+                        //     type: 'invoice',
+                        //     id: invoice.internalid,
+                        //     columns: ['custbody_lrc_fatura_principal']
+                        // }).custbody_lrc_fatura_principal[0].value;
+
+                        // log.debug("CustomerPaymentUserEvent aftersubmit", `Atualizar parcela (${invoice.internalid}) do pedido id: ${soId}`);
+                        // _uniqueSalesOrderIds.add(soId);
+
+
+                        /*
+                        
+                        if(paymentData[soId] == null) {
+                            paymentData[soId] = new Array();
+                        }
+                        paymentData[soId].push({
+                            seq : invoice.internalid,
+                            paymentId : pymtRecord.id,
+                            dtpgto : paymentDate,
+                            valor_pago : -1
+    
+                        });
+                        */
                     });
-                    */
-                });
-                log.debug("lendo a lista de sales orders selecionadas para update", `****** Atualizando ${_uniqueSalesOrderIds.size}  sales orders. *********`);
+                    //log.debug("lendo a lista de sales orders selecionadas para update", `****** Atualizando ${_uniqueSalesOrderIds.size}  sales orders. *********`);
 
-                _uniqueSalesOrderIds.forEach((soId) => {
-                    log.debug("sales order id: ", soId);
+                    //verifica se existe invoices selcionadas
 
-                    // let salesOrder = nsSearch.load({
-                    //     type: 'salesorder',
-                    //     id: soId
-                    // })   
+                    // if (_uniqueInvoiceIds.size > 0) {
+                    if (paymentData.length > 0) {
 
+                        let sql = `SELECT custbody_lrc_fatura_principal as salesorder FROM Transaction WHERE 
+                                recordtype = 'invoice'
+                                AND (`;
+                                paymentData.forEach((invoice) => {
+                                    sql += ` id = ${invoice.invoiceId} or `;
+                                    // log.debug('selected transaction', "selected invoices id: " + id);
+                                });
+                                
+                                // _uniqueInvoiceIds.forEach((id) => {
+                                //     sql += ` id = ${id} or `;
+                                //     // log.debug('selected transaction', "selected invoices id: " + id);
+                                // });
+                        sql = sql.substring(0, sql.length - 3);
+                        sql += `)`;
+                        sql += ` group by custbody_lrc_fatura_principal`;
+                        log.debug('Search for sales order that generated the instalments', sql);
 
-                    //}
+                        let salesOrderList = nsQuery.runSuiteQL(sql).asMappedResults();
 
+                        // comeca a dar baixa nos pagamentos dos contratos (salesorders)
+                        // chama o script user event do sales order e passa junto objeto paymentData.
+                        salesOrderList.forEach( (transaction) => {
 
-                    //esse if serve para evitar salvar a mesma vendorbill mais de uma vez quando 
-                    // a mesma vendorbill está repetindo da sublista apply do vendorpayment.
-                    //if (lastInternalId != applyLine.internalid) {
-                    //const invoice = nsRecord.load({ type: 'invoice', id: applyLine.internalid, isDynamic: true });
-                    // //Chama o endpoing beforeSubmit realizado no vendorBill
-                    // //para atualizar os campo instalments
-                    // SalesOrderUserEvent.beforeSubmit(
-                    //     {
-                    //         newRecord: invoice,
-                    //         rsc_paymentDate: paymentDate
+                            log.debug("Atualizando sales order id: ", transaction.salesorder);
+                            
+                            let salesOrderRecord = nsRecord.load({
+                                type: 'salesorder',
+                                id: transaction.salesorder,
+                                isDynamic: true
+                            });
+                            // let salesOrderInstalments = nsSearch.lookupFields({
+                            //     type: nsSearch.Type.SALES_ORDER,
+                            //     id: soId,
+                            //     columns: ['custbody_rsc_installments']
+                            //     });
+                            // log.debug("sales order instalments", salesOrderInstalments.custbody_rsc_installments);
+                            SalesOrderUserEvent.beforeSubmit({
+                                    newRecord: salesOrderRecord,
+                                    paymentData: paymentData
+                            });
+                            salesOrderRecord.save({ 
+                                ignoreMandatoryFields: true 
+                            });
+                               
 
-                    //     });
-                    // invoice.save({ ignoreMandatoryFields: true });
-                    //    lastInternalId = applyLine.internalid;
-                    //}
+                        });
+                    }
+                }
 
-                });
             }
         }
         return {

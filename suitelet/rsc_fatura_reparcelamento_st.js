@@ -488,9 +488,9 @@ function onRequest(context) {
             label: 'Fator 2'
         });
 
-        // fator_correcao_2.updateDisplayType({
-        //     displayType: serverWidget.FieldDisplayType.HIDDEN
-        // });
+        fator_correcao_2.updateDisplayType({
+            displayType: serverWidget.FieldDisplayType.HIDDEN
+        });
 
         var fator_correcao_3_parcela = sublistaReparcelamento.addField({
             id: custPage+'fator_correcao_3_parcela',
@@ -498,9 +498,9 @@ function onRequest(context) {
             label: 'Fator 3 (Parcela)'
         });
 
-        // fator_correcao_3_parcela.updateDisplayType({
-        //     displayType: serverWidget.FieldDisplayType.HIDDEN
-        // });
+        fator_correcao_3_parcela.updateDisplayType({
+            displayType: serverWidget.FieldDisplayType.HIDDEN
+        });
 
         var fator_correcao_3 = sublistaReparcelamento.addField({
             id: custPage+'fator_correcao_3',
@@ -508,9 +508,9 @@ function onRequest(context) {
             label: 'Fator 3 (Última Atualização)'
         });
 
-        // fator_correcao_3.updateDisplayType({
-        //     displayType: serverWidget.FieldDisplayType.HIDDEN
-        // });        
+        fator_correcao_3.updateDisplayType({
+            displayType: serverWidget.FieldDisplayType.HIDDEN
+        });        
 
         var fator_correcao_atual = sublistaReparcelamento.addField({
             id: custPage+'fator_correcao_atual',
@@ -2063,7 +2063,8 @@ const construtor = (method, parameters) => {
             // totalCalculado.defaultValue = totalDiferenca.defaultValue = parameters.renegociacao == 'Inadimplentes' ? 
             // (parseFloat(somatorio.valorAtualizado) + parseFloat(somatorio.atualizacaoMonetaria)) - (Number(somatorio.juros).toFixed(2) - Number(jurosAntes).toFixed(2)) :  
             // parseFloat(somatorio.valorAtualizado) + parseFloat(somatorio.atualizacaoMonetaria);
-            totalCalculado.defaultValue = totalDiferenca.defaultValue = parseFloat(somatorio.valorAtualizado) + parseFloat(somatorio.atualizacaoMonetaria);
+            // totalCalculado.defaultValue = totalDiferenca.defaultValue = parseFloat(somatorio.valorAtualizado) + parseFloat(somatorio.atualizacaoMonetaria);
+            totalCalculado.defaultValue = parseFloat(somatorio.valorOriginal) + parseFloat(somatorio.atualizacaoMonetaria) + parseFloat(somatorio.multa) + parseFloat(somatorio.juros) + parseFloat(somatorio.proRata);
 
             if (parameters.renegociacao == 'Recálculo de atrasos' || parameters.renegociacao == 'Antecipação') {
                 principalInformado.defaultValue = parseFloat(somatorio.valorOriginal) + parseFloat(somatorio.atualizacaoMonetaria);
@@ -5253,7 +5254,8 @@ const criarTabelaEfetivacaoReparcelamento = (dados) => {
                     // value: parseFloat(dadosReparcelamento[i].valorAtualizadoAntes) + parseFloat(dadosReparcelamento[i].calculoPR.proRata) + parseFloat(dados.atualizacaoMonetaria)
                     // value: parseFloat(dadosReparcelamento[0].valor) + parseFloat(dados.atualizacaoMonetaria / dadosReparcelamento.length) + parseFloat(dadosReparcelamento[0].multa) + parseFloat(dadosReparcelamento[0].juros) + 
                     // parseFloat(dadosReparcelamento[0].calculoPR.proRata)
-                    value: parseFloat(dadosReparcelamento[i].valorD2) + parseFloat(dadosReparcelamento[i].valorD2 * custentity_rsc_multa) + parseFloat(dadosReparcelamento[i].jurosD2)
+                    value: parseFloat(dadosReparcelamento[i].valorD2) + parseFloat(dadosReparcelamento[i].valorD2 * custentity_rsc_multa) + parseFloat(dadosReparcelamento[i].jurosD2) + 
+                    parseFloat(dadosReparcelamento[i].calculoPR.proRata)
                 });
         
                 tabelaEfetivacao.commitLine({

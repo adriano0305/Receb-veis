@@ -14,13 +14,14 @@ const opcoes = {
     ignoreMandatoryFields: true
 }
 
-define(["require", "exports", "N/log", "N/record", "N/search"], function (require, exports, log_1, record_1, search_1) {
+define(["require", "exports", "N/log", "N/record", "N/search", "N/task"], function (require, exports, log_1, record_1, search_1, task_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     exports.beforeLoad = void 0;
     log_1 = __importDefault(log_1);
     record_1 = __importDefault(record_1);
     search_1 = __importDefault(search_1);
+    task_1 = __importDefault(task_1);
     var beforeLoad = function (ctx) {
         var form = ctx.form;
         var record = ctx.newRecord;
@@ -80,7 +81,9 @@ define(["require", "exports", "N/log", "N/record", "N/search"], function (requir
         
         const novoRegistro = context.newRecord;
 
-        if (novoRegistro.id) {
+        const tipo = context.type;
+
+        if (novoRegistro.id && (tipo == 'create' || tipo == 'edit')) {
             var statusDistrato = novoRegistro.getValue('custrecord_rsc_status_distrato');
         
             // Escriturado
@@ -88,14 +91,34 @@ define(["require", "exports", "N/log", "N/record", "N/search"], function (requir
                 var contrato = novoRegistro.getValue('custrecord_rsc_contrato_distrato');
 
                 var campos = {
-                    custbody_rsc_status_contrato: 3 // Distrato
+                    custbody_rsc_status_contrato: 3, // Distrato
+                    custbody_rsc_distrato: novoRegistro.id,
                 }
 
                 atualizarTransacao('salesorder', contrato, campos);
             }
+
+            // Aprovado
+            if (statusDistrato == 3) {
+                taskDistrato(novoRegistro.id);             
+            }
         }
     };
     exports.afterSubmit = afterSubmit;
+
+    function taskDistrato(idInterno) {
+        var scriptTask = task_1.default.create({
+            taskType: task_1.default.TaskType.SCHEDULED_SCRIPT,
+            scriptId: 1972,                                
+            params: {
+                custscript_rsc_distrato: idInterno
+            }
+        });
+        log_1.default.audit('scriptTask', scriptTask);
+    
+        var scriptTaskId = scriptTask.submit();
+        log_1.default.audit('task', {scriptTaskId: scriptTaskId, scriptTask: scriptTask});        
+    }
 
     function atualizarTransacao(tipo, idInterno, valores) {
         // log_1.default.audit('atualizarTransacao', {tipo: tipo, idInterno: idInterno, valores: valores});
@@ -105,6 +128,7 @@ define(["require", "exports", "N/log", "N/record", "N/search"], function (requir
         var load_ctrl_esc = record_1.default.load({type: 'customrecord_lrc_controle_escrituracao', id: loadReg.getValue('custbody_lrc_fat_controle_escrituracao')});
 
         loadReg.setValue('custbody_rsc_status_contrato', valores.custbody_rsc_status_contrato)
+        .setValue('custbody_rsc_distrato', valores.custbody_rsc_distrato)
         .save(opcoes);
 
         log_1.default.audit('atualizarTransacao', {status: 'Sucesso', tipo: tipo, idInterno: idInterno, valores: valores});

@@ -715,6 +715,9 @@ const aprovar = () => {
         .setValue('custrecord_rsc_status_cessao', 2)
         .save();
 
+        // Após a aprovação já realiza a cessão de direitos.
+        implantacao();
+
         document.location.reload(true);        
     } catch(e) {
         console.log('Erro', e);

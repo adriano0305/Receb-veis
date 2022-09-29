@@ -52,3 +52,35 @@ require(['N/query'], function(query) {
     var results = resultSet.results;
     console.log(JSON.stringify(results));
 });
+
+require(['N/query'], function(query) {
+    var myInvoiceQuery = query.create({type: 'transaction'});
+
+    var type = myInvoiceQuery.createCondition({
+        fieldId: 'type',
+        operator: query.Operator.ANY_OF,
+        values: 'CustInvc'
+    });
+
+    var faturaPrincipal = myInvoiceQuery.createCondition({
+        fieldId: 'custbody_lrc_fatura_principal',
+        operator: query.Operator.ANY_OF,
+        values: 647972
+    });
+
+    myInvoiceQuery.condition = myInvoiceQuery.and(
+        type, faturaPrincipal
+    );
+
+    myInvoiceQuery.columns = [
+        myInvoiceQuery.createColumn({
+            fieldId: 'id'
+        })
+    ];
+
+    var resultSet = myInvoiceQuery.run();
+    console.log(JSON.stringify(resultSet));
+
+    var results = resultSet.results;
+    console.log(JSON.stringify(results));
+});
