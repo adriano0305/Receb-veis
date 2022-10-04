@@ -31,8 +31,6 @@ function tratativasContrato(idContrato) {
     //     }
     // }
 
-    // Aqui.
-
     var myInvoiceQuery = query.create({type: 'transaction'});
 
     var type = myInvoiceQuery.createCondition({

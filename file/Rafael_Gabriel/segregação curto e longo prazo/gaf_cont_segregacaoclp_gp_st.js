@@ -267,17 +267,31 @@ function onRequest(ctx) {
             busca.run().each(function(result) {
                 var statusInstallment = result.getValue({name: "status", join: "installment"});      
 
-                if (statusInstallment == 'Não pago') {
-                    log.audit('result', result);
+                var dataSegreg = dataVigencia.split('/');
+                var dataSeg = new Date(Number(dataSegreg[2]), dataSegreg[1] - 1, dataSegreg[0]);
+                var dataVencimento = result.getValue({name: "duedate", join: "installment"}).split('/');
+                var dataApuracao = new Date(dataVencimento[2], dataVencimento[1], dataVencimento[0]);
+                var tranid = result.getValue("tranid");
+                log.audit('datas', {id: result.id, tranid: tranid, statusInstallment: statusInstallment, dataApuracao: dataApuracao, dataVencimento: dataVencimento, dataSeg: dataSeg, dataSegreg: dataSegreg}); 
 
-                    var dataSegreg = dataVigencia.split('/');
-                    var dataSeg = new Date(Number(dataSegreg[2]), dataSegreg[1] - 1, dataSegreg[0]);
-                    var dataVencimento = result.getValue({name: "duedate", join: "installment"}).split('/');
-                    var dataApuracao = new Date(dataVencimento[2], dataVencimento[1], dataVencimento[0]);
-                    var tranid = result.getValue("tranid");
-                    log.audit('datas', {id: result.id, tranid: tranid, statusInstallment: statusInstallment, dataApuracao: dataApuracao, dataVencimento: dataVencimento, dataSeg: dataSeg, dataSegreg: dataSegreg}); 
+                const diferencaDatasDia = (data1, data2) => {
+                    const dia = 24 * 60 * 60 * 1000;
+                    var data1Mls = data1.getTime();
+                    var data2Mls = data2.getTime();
+                    return Math.abs(parseInt((data1Mls - data2Mls) / dia));
+                }
+
+                var difDataSeg_DataVencInst = diferencaDatasDia(dataSeg, dataApuracao);
+
+                /**SOMENTE FATURAS DE FORNECEDORES:
+                 * Status das parcelas: 'Não pago',
+                 * Tipo de Segregação: 'Longo Prazo' (diferença entre a data de segregação e o vencimento da parcela deve ser superior a 365 dias).
+                 */
+                if (statusInstallment == 'Não pago' && difDataSeg_DataVencInst > 365) {
+                    log.audit('result', result);                 
 
                     var objResultados = {
+                        tipoSegreg: 'Longo Prazo',
                         data: result.getValue("trandate"),
                         subsidiary: result.getValue("subsidiary"),
                         vendor: result.getValue("entity"),
@@ -294,17 +308,6 @@ function onRequest(ctx) {
                         idFatura: result.id,
                         dataSegregacao: dataVigencia
                     }
-
-                    const diferencaDatasDia = (data1, data2) => {
-                        const dia = 24 * 60 * 60 * 1000;
-                        var data1Mls = data1.getTime();
-                        var data2Mls = data2.getTime();
-                        return Math.abs(parseInt((data1Mls - data2Mls) / dia));
-                    }
-
-                    var difDataSeg_DataVencInst = diferencaDatasDia(dataSeg, dataApuracao)
-                    if (difDataSeg_DataVencInst <= 365) {objResultados.tipoSegreg = 'Curto Prazo'}
-                    else {objResultados.tipoSegreg = 'Longo Prazo'}
                     
                     // if (resultados.length == 0) {
                     resultados.push(objResultados);

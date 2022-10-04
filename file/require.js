@@ -75,7 +75,10 @@ require(['N/query'], function(query) {
     myInvoiceQuery.columns = [
         myInvoiceQuery.createColumn({
             fieldId: 'id'
-        })
+        }),
+        myInvoiceQuery.createColumn({
+            fieldId: 'tranid'
+        }),
     ];
 
     var resultSet = myInvoiceQuery.run();

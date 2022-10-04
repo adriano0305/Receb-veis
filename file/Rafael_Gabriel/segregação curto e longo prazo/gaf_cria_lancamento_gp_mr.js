@@ -20,8 +20,32 @@ const dados = {
     }
 }
 
-define(['N/search', 'N/log', 'N/record', 'N/runtime'], function(search, log, record, runtime) {
-function atualizaTransacao(json) {
+const relacao = {
+    sucesso: 0,
+    erro: 0
+}
+
+const liamE = {
+    autor: -5, // Sistema
+    assunto: 'Segregação de Fornecedores realizada com sucesso!'
+}
+
+define(['N/email', 'N/log', 'N/record', 'N/runtime'], function(email, log, record, runtime) {
+const enviarEmail = (params, relac) => {
+    log.audit('enviarEmail', {params: params, relac: relac});
+
+    const objEmail = {
+        author: liamE.autor,
+        recipients: params.usuarioAtual.id,
+        subject: liamE.assunto,
+        body: relac
+    }
+
+    email.send(objEmail);
+    log.audit('enviarEmail', {status: 'Sucesso', dados: objEmail});
+}
+
+const atualizaTransacao = (json) => {
     log.audit('atualizaTransacao', json);
 
     var objLancamento = {};
@@ -47,7 +71,7 @@ function atualizaTransacao(json) {
     }
 }
 
-function formatData(data) {
+const formatData = (data) => {
     var partesData = data.split("/");
     var novaData = new Date(partesData[2], partesData[1] - 1, partesData[0]);
     return novaData;
@@ -102,6 +126,11 @@ function reduce(context) {
 function map(context) {
     // log.audit('map', context);
 
+    const scriptAtual = runtime.getCurrentScript();
+
+    const parametro = JSON.parse(scriptAtual.getParameter({name: 'custscript_rsc_json_lancamentos_segreg'}));
+    log.audit('map', {parametro: parametro});
+
     var jsonLancamentos = JSON.parse(context.value);
     log.audit('jsonLancamentos', jsonLancamentos);
 
@@ -112,7 +141,7 @@ function map(context) {
         .setValue('custbody_gaf_vendor', jsonLancamentos.vendor)
         .setValue('subsidiary', jsonLancamentos.subsidiary)
         .setValue('custbodysegregacao_curt_long', jsonLancamentos.checkbox)
-        .setValue('custbody_ref_parcela_2',jsonLancamentos.idFatura)
+        .setValue('custbody_ref_parcela_2', jsonLancamentos.idFatura)
         .setValue('memo', dados.memo.fornecedores);
         
         // if (jsonLancamentos.tipoSegreg == "Curto Prazo") {
@@ -168,11 +197,23 @@ function map(context) {
 
         jsonLancamentos.idLancamento = idLancamento;
 
-        atualizaTransacao(jsonLancamentos);    
+        atualizaTransacao(jsonLancamentos);   
+
+        relacao.sucesso = relacao.sucesso + 1; 
+        log.audit('relacao', relacao);       
+        if ((relacao.sucesso + relacao.erro) == parametro.length) {
+            enviarEmail(parametro, relacao);          
+        }      
     } catch(e) {
         log.error('Erro idFatura', {idFatura: jsonLancamentos[i].idFatura, msg: e});
         jsonLancamentos.msg = e;
         atualizaTransacao(jsonLancamentos);
+
+        relacao.erro = relacao.erro + 1; 
+        log.audit('relacao', relacao);       
+        if ((relacao.erro + relacao.sucesso) == parametro.length) {
+            enviarEmail(parametro, relacao);             
+        } 
     }
 }
 

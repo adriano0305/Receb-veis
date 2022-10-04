@@ -2,9 +2,10 @@
  *@NApiVersion 2.1
 *@NScriptType ClientScript
 */
-define(['N/currentRecord', 'N/search','N/ui/dialog'], function(currentRecord, search, dialog) {
+
+define(['N/currentRecord', 'N/runtime', 'N/search', 'N/ui/dialog'], function(currentRecord, runtime, search, dialog) {
 function pageInit(ctx) {
-    var page = ctx.currentRecord
+    const page = ctx.currentRecord
     var searchOfsearch = search.create({type: "savedsearch",
         filters: [
             ["id","is","customsearch_gaf_src_curto_long"]
@@ -60,7 +61,7 @@ function pageInit(ctx) {
 }
 
 function selecionar() {
-    var page = currentRecord.get();
+    const page = currentRecord.get();
     var count = page.getLineCount({sublistId: 'custpage_sublist'});
     for (i=0; i<count; i++) {
         page.selectLine({sublistId: "custpage_sublist", line: i});
@@ -70,7 +71,7 @@ function selecionar() {
 }
 
 function desmarcar() {
-    var page = currentRecord.get();
+    const page = currentRecord.get();
     var count = page.getLineCount({sublistId: 'custpage_sublist'});
     for (i=0; i<count; i++) {
         page.selectLine({sublistId: "custpage_sublist", line: i});
@@ -80,9 +81,11 @@ function desmarcar() {
 }
 
 function saveRecord(ctx) {
-    var page = ctx.currentRecord;
+    const page = ctx.currentRecord;
+    const usuarioAtual = runtime.getCurrentUser();
+    const mensagem = 'Ao final do processo será enviado e-mail para: ' + usuarioAtual.email + '. \n Confirma?';
+
     var jsonAtualizado = [];
-    var json = JSON.parse(page.getValue('custpage_json_holder'));
     var count = page.getLineCount({sublistId: 'custpage_sublist'});
     
     for (i=0; i<count; i++) {
@@ -102,7 +105,8 @@ function saveRecord(ctx) {
                 "dataSegregacao": {
                     text: page.getText({fieldId: 'custpage_data_segregacao'}),
                     value: page.getValue({fieldId: 'custpage_data_segregacao'})
-                }
+                },
+                "usuarioAtual": usuarioAtual
             });
         }        
     }
@@ -118,8 +122,8 @@ function saveRecord(ctx) {
     }
 
     page.setValue('custpage_json_holder', JSON.stringify(jsonAtualizado));
-    return true
 
+    return confirm(mensagem) ? true : false;
 }
 
 

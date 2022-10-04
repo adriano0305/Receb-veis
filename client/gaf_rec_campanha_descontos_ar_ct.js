@@ -109,6 +109,8 @@ function saveRecord(context) {
 
         return false;
     }
+
+    return true;
 }
 
 function validateField(context) {}

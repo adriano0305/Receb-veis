@@ -1,5 +1,5 @@
 /**
- *@NApiVersion 2.x
+ *@NApiVersion 2.1
 *@NScriptType ClientScript
 */
 
@@ -199,6 +199,18 @@ function recalcJuros(novoVencimento, job, arrayParcelas, am) {
         }
     });
     // console.log('arrayParcelas Atualizado', JSON.stringify(arrayParcelas));
+
+    arrayParcelas.forEach(function(insta) {
+        var valor_com_am = parseFloat(insta.valor) + parseFloat((insta.atualizacaoMonetaria).toFixed(2) || ZERO);
+        var multa_sobre_valor_atualizado_com_am = multa ? Number(valor_com_am * multa).toFixed(2) : '';
+        var valor_atualizado_com_am = parseFloat(valor_com_am) + parseFloat(multa_sobre_valor_atualizado_com_am) + parseFloat(insta.jurosD2);
+        // console.log('insta', JSON.stringify({
+        //     valor_com_am: valor_com_am, 
+        //     multa_sobre_valor_atualizado_com_am: multa_sobre_valor_atualizado_com_am, 
+        //     valor_atualizado_com_am: valor_atualizado_com_am
+        // }));
+        insta.valor_atualizado_com_am = valor_atualizado_com_am;
+    });
 
     return arrayParcelas;
 }
@@ -697,7 +709,8 @@ function simulacao(ordem) {
             valorAtualizado: (parseFloat(total_valorAtualizado) + parseFloat(calculoPR.proRata)).toFixed(2)
         }
 
-        json.campanhaDesconto = campanhaDesconto(primeiroVencimento, json.somatorioParcelas.valorAtualizado, objJob.empreendimento); 
+        // json.campanhaDesconto = campanhaDesconto(primeiroVencimento, json.somatorioParcelas.valorAtualizado, objJob.empreendimento); 
+        json.campanhaDesconto = campanhaDesconto2(primeiroVencimento, objJob.empreendimento, arrayParcelas); 
 
         registroAtual.setValue({
             fieldId: custPage+'dif_dias',
@@ -791,7 +804,8 @@ function simulacao(ordem) {
             }   
 
             if (renegociacao == 'Antecipação') {
-                json.campanhaDesconto = campanhaDesconto(vencimentoEntrada, json.somatorioParcelas.valorAtualizado, objJob.empreendimento); 
+                // json.campanhaDesconto = campanhaDesconto(vencimentoEntrada, json.somatorioParcelas.valorAtualizado, objJob.empreendimento); 
+                json.campanhaDesconto = campanhaDesconto2(vencimentoEntrada, objJob.empreendimento, arrayParcelas); 
             }             
         }
 
@@ -953,6 +967,153 @@ function campanhaDesconto(data, valor, empreendimento) {
         objCD = {    
             valor: ZERO,
             cd: '',        
+            desconto: ZERO,
+            valorDesconto: ZERO
+        }
+    }   
+    
+    return objCD;
+}
+
+function campanhaDesconto2(data, empreendimento, arrayParcelas) {
+    console.log('campanhaDesconto2', JSON.stringify({data: data, empreendimento: empreendimento, arrayParcelas: arrayParcelas}));
+    
+    const deltaDia = 24 * 60 * 60 * 1000;
+
+    const partesDT = data.split("/");
+    var vencimentoDT = new Date(partesDT[2], partesDT[1] - 1, partesDT[0]);
+    var mlsDT = vencimentoDT.getTime();
+    // console.log('DT', JSON.stringify({partesDT: partesDT, vencimentoDT: vencimentoDT, mlsDT: mlsDT}));
+    
+    var vigenciaInicio, vigenciaFim;
+
+    const hoje = new Date();
+    var dia = hoje.getDate()+1 > 9 ? hoje.getDate()+1 : '0'+(hoje.getDate()+1);
+    var mes = hoje.getMonth()+1 > 9 ? hoje.getMonth()+1 : '0'+(hoje.getMonth()+1);
+    var ano = hoje.getFullYear();
+
+    // Início da vigência
+    var inicioVigencia = String(dia+'/'+mes+'/'+ano);
+    var split_inicio_vigencia = inicioVigencia.split('/');
+    var mes_inicio_vigencia = split_inicio_vigencia[1];
+    var ano_inicio_vigencia = split_inicio_vigencia[2];
+
+    switch (mes_inicio_vigencia) {
+        case '01': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '02': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '03': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '04': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '05': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '06': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '07': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '08': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '09': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '10': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '11': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+        case '12': vigenciaInicio = String('01/'+mes_inicio_vigencia+'/'+ano_inicio_vigencia); break;
+    }
+
+    // Fim da vigência
+    var split_fim_vigencia = data.split('/');    
+    var mes_fim_vigencia = split_fim_vigencia[1];
+    var ano_fim_vigencia = split_fim_vigencia[2];
+    console.log('splits', JSON.stringify({split_inicio_vigencia: split_inicio_vigencia, split_fim_vigencia: split_fim_vigencia}));
+
+    switch (mes_fim_vigencia) {
+        case '01': vigenciaFim = String('31/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '02': vigenciaFim = String('28/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '03': vigenciaFim = String('31/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '04': vigenciaFim = String('30/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '05': vigenciaFim = String('31/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '06': vigenciaFim = String('30/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '07': vigenciaFim = String('31/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '08': vigenciaFim = String('31/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '09': vigenciaFim = String('30/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '10': vigenciaFim = String('31/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '11': vigenciaFim = String('30/'+mes_fim_vigencia+'/'+ano_fim_vigencia); break;
+        case '12': vigenciaFim = String('31/'+mes+'/'+ano); break;
+    }
+
+    console.log(JSON.stringify({vigenciaInicio: vigenciaInicio, vigenciaFim: vigenciaFim}));
+
+    const tratativasCD = (discountPercentage, installments) => {
+        // console.log('tratativasCD', JSON.stringify(installments));
+        var obj_campanha_desconto = {    
+            valor: 0,
+            cd: discountPercentage,    
+            descontoTotal: 0,    
+            desconto: 0,
+            valorDesconto: 0
+        }
+
+        for (var prop in installments) {
+            if (installments.hasOwnProperty(prop)) {
+                obj_campanha_desconto.valor = Number(parseFloat(obj_campanha_desconto.valor) + parseFloat(installments[prop].valor_atualizado_com_am)).toFixed(2),
+                obj_campanha_desconto.desconto = Number(parseFloat(obj_campanha_desconto.desconto) + parseFloat(installments[prop].desconto)).toFixed(2),
+                obj_campanha_desconto.descontoTotal = Number(parseFloat(obj_campanha_desconto.descontoTotal) + parseFloat(installments[prop].desconto)).toFixed(2),
+                obj_campanha_desconto.valorDesconto = Number(parseFloat(obj_campanha_desconto.valorDesconto) + parseFloat(installments[prop].valorDesconto)).toFixed(2)
+            }
+            // console.log('tratativasCD '+prop, JSON.stringify(obj_campanha_desconto));
+        }
+        
+        console.log('tratativasCD', JSON.stringify(obj_campanha_desconto));
+        obj_campanha_desconto.desconto = (obj_campanha_desconto.desconto / installments.length).toFixed(2);
+
+        return obj_campanha_desconto;
+    }
+
+    var bscCD = search.create({type: "customrecord_rsc_campanhadesconto",
+        filters: [
+            // ["custrecord_rsc_vigenciainicio","on",vigenciaInicio], "AND", 
+            // ["custrecord_rsc_vigenciafim","on",vigenciaFim], "AND", 
+            ["custrecord_rsc_vigenciafim","onorafter",vigenciaFim], "AND",
+            ["custrecord_rsc_empreendimentocampanha","anyof",empreendimento], "AND",
+            ["isinactive","is","F"]
+        ],
+        columns: [
+            "id","name","custrecord_rsc_vigenciainicio","custrecord_rsc_vigenciafim","custrecord_rsc_percentualdesconto","custrecord_rsc_observacaocampanha"
+        ]
+    }).run().getRange(0,1);
+    console.log('bscCD', JSON.stringify(bscCD));
+
+    var percentualDesconto, taxaJuros, objCD;
+
+    if (bscCD.length > 0) {
+        percentualDesconto = Number(bscCD[0].getValue('custrecord_rsc_percentualdesconto').replace('%', '')).toFixed(2);
+        taxaJuros = (((Math.pow((1 + (percentualDesconto / 100 / 100)), (1/360))) -1) * 100).toFixed(6);
+
+        arrayParcelas.forEach(function(ap) {
+            // console.log(JSON.stringify({ap: ap}));
+            const partesVP = ap.vencimento.split("/");
+            var vencimentoVP = new Date(partesVP[2], partesVP[1] - 1, partesVP[0]);
+            var mlsVP = vencimentoVP.getTime();
+            var dif = Math.abs(mlsVP - mlsDT);
+    
+            var nDias = parseInt(dif / deltaDia);
+           
+            var desconto = Number(ap.valor_atualizado_com_am - (ap.valor_atualizado_com_am / (1 + Number(taxaJuros)) ** nDias)).toFixed(2);
+            var valorDesconto = Number(ap.valor_atualizado_com_am - desconto).toFixed(2);
+
+            ap.desconto = desconto;
+            ap.valorDesconto = valorDesconto;
+
+            console.log('result', JSON.stringify({
+                valor: ap.valor_atualizado_com_am,
+                cd: percentualDesconto,
+                taxaJuros: taxaJuros,
+                nDias: nDias,
+                desconto: desconto,
+                valorDesconto: valorDesconto                
+            }));        
+        });       
+
+        objCD = tratativasCD(percentualDesconto, arrayParcelas);
+    } else {
+        objCD = {    
+            valor: ZERO,
+            cd: '', 
+            taxaJuros: ZERO, 
+            nDias: ZERO,      
             desconto: ZERO,
             valorDesconto: ZERO
         }
@@ -1158,6 +1319,7 @@ function atualizacaoMonetaria(reneg, dt1, dt2) {
         // fator_anterior3 = fatorCorrecao(primeiroVencimento.mes, 'anterior3', dt2[0].indice);   
         // valor_atualizacao_monetaria = valor_atualizacao_monetaria + (((fator_anterior2 / fator_anterior3) - 1) * dt2[0].valorAtualizado);
         valor_atualizacao_monetaria = valor_atualizacao_monetaria + (((fator_anterior2 / fator_anterior3) - 1) * dt2[0].valor);
+        dt2[0].valor_atualizado_com_am = valor_atualizacao_monetaria + (((fator_anterior2 / fator_anterior3) - 1) * dt2[0].valor);
     } else {
         for (i=0; i<dt2.length; i++) {
             fator_anterior2 = dt2[i].fator_correcao_2;
