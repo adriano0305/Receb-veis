@@ -227,7 +227,8 @@ const gerarLancamentos = (dados) => {
             lancamento.setCurrentSublistValue('line', 'memo', campos.line[key].memo)
             .setCurrentSublistValue('line', 'custcol_rsc_devido_subsidiary', campos.line[key].custcol_rsc_devido_subsidiary)
             .setCurrentSublistValue('line', 'location', campos.line[key].location)
-            .setCurrentSublistValue('line', 'entity', campos.line[key].entity)           
+            .setCurrentSublistValue('line', 'entity', campos.line[key].entity)    
+            .setCurrentSublistValue('line', 'custcol_rsc_fieldcliente', campos.line[key].custcol_rsc_fieldcliente)           
             .commitLine('line');
         }
 

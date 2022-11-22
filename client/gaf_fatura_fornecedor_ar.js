@@ -2,7 +2,16 @@
  * @NApiVersion 2.1
  * @NScriptType ClientScript
 */
-define(['N/log', 'N/runtime'], function(log, runtime) {
+define(['N/log', 'N/runtime', 'N/search'], function(log, runtime, search) {
+const srcTransacao = (tipo, idInterno, coluna) => {
+    var lkpTransacao = search.lookupFields({type: tipo,
+        id: idInterno,
+        columns: coluna
+    });
+
+    return lkpTransacao;
+}
+
 const numeroRecebimentoFisico = (str) => {
     return str.replace(/\D/g, '');
 }
@@ -21,7 +30,17 @@ function pageInit(context) {
     var reciboFisico = ambiente == 'PRODUCTION' ? numeroRecebimentoFisico(urlFormulario.substr(101, 10)) : numeroRecebimentoFisico(urlFormulario.substr(105, 10));
     log.audit('reciboFisico', reciboFisico);
 
-    registroAtual.setValue('custbody_rsc_numero_recebimento_fisico', reciboFisico);
+    if (reciboFisico) {
+        var dadosRecibo = srcTransacao('itemreceipt', reciboFisico, 'custbody_rsc_data_emissao_nf_receb');
+        log.audit('dadosRecibo', dadosRecibo);
+
+        registroAtual.setValue('custbody_rsc_numero_recebimento_fisico', reciboFisico);
+
+        if (Object.keys(dadosRecibo).length > 0) {
+            registroAtual.setText('trandate', dadosRecibo.custbody_rsc_data_emissao_nf_receb)
+            .setText('custbody_rsc_data_emissao_nf_receb', dadosRecibo.custbody_rsc_data_emissao_nf_receb);
+        }        
+    }
 }
 
 function postSourcing(context) {}

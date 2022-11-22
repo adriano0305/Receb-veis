@@ -94,6 +94,7 @@ define(['N/file', 'N/ui/serverWidget', 'N/query', 'N/record', 'N/task', 'N/ui/me
         }
 
         function createList(assistant , records, name, precision){
+            log.audit('createList', {assistant: assistant, name: name, precision: precision});
             // Create a sublist for the results.
             var resultsSublist = assistant.addSublist(
                 {
@@ -105,6 +106,7 @@ define(['N/file', 'N/ui/serverWidget', 'N/query', 'N/record', 'N/task', 'N/ui/me
 
             // Get the column names.
             var columnNames = Object.keys( records[0] );
+            // log.audit('columnNames', columnNames);
 
             // Loop over the column names...
             for ( i = 0; i < columnNames.length; i++ ) {
@@ -133,17 +135,21 @@ define(['N/file', 'N/ui/serverWidget', 'N/query', 'N/record', 'N/task', 'N/ui/me
 
                     // Get the column value.
                     var value = record[column];
+                    // log.audit('c', {column: column, value: value});
+                    
                     if ( value != null ) {
                         if (isNaN(value)){
                             value = value.toString();
-                        } else {
-                            if (precision == 3){
-                                value = format.format({value: value, type: format.Type.PERCENT});
-                            } else {
-                                value = format.format({value: value, type: format.Type.CURRENCY});
-                            }
-                        }
+                        } 
+                        // else {
+                        //     if (precision == 3){
+                        //         value = format.format({value: value, type: format.Type.PERCENT});
+                        //     } else {
+                        //         value = format.format({value: value, type: format.Type.CURRENCY});
+                        //     }
+                        // }
                     }
+                    // log.audit('c depois', {column: column, value: value});
                     // Add the column value.
                     resultsSublist.setSublistValue(
                         {
@@ -229,14 +235,14 @@ define(['N/file', 'N/ui/serverWidget', 'N/query', 'N/record', 'N/task', 'N/ui/me
                         }
                     }
 
-                    sqlValores = 'Round((((abs(' + sqlDividendo + ')) / (abs(' + sqlDivisor + ')) )*100), 3)';
+                    sqlValores = 'Round((((abs(' + sqlDividendo + ')) / (abs(' + sqlDivisor + ')) )*100), 7)';
                     sql += ' , ' + sqlValores  + header['custrecord_rsc_fatores_operacao'] + ' ';
                 }
             sql += 'from subsidiary, job  ' +
             //  '                    where 1 = subsidiary.custrecordtpemp and job.custentity_rsc_aprop_subsidiaria = subsidiary.id order by 1';
-            '                    where 1 = subsidiary.custrecordtpemp and job.custentity_rsc_aprop_subsidiaria = subsidiary.id and job.id in (21906,21910,21922,21952) order by 1';
+            // '                    where 1 = subsidiary.custrecordtpemp and job.custentity_rsc_aprop_subsidiaria = subsidiary.id and job.id in (21906,21910,21911,21922,21952) order by 1';
                 // '                    where 1 = subsidiary.custrecordtpemp and job.custentity_rsc_aprop_subsidiaria = subsidiary.id order by 1';
-                // '                    where 1 = subsidiary.custrecordtpemp and job.custentity_rsc_aprop_subsidiaria = subsidiary.id and job.id in (21922) order by 1';
+                '                    where 1 = subsidiary.custrecordtpemp and job.custentity_rsc_aprop_subsidiaria = subsidiary.id and job.id in (21910,21922) order by 1';
             log.debug({title: 'Sql completo ', details : sql});
             var queryResults = query.runSuiteQL({
                 query:  sql
@@ -253,6 +259,15 @@ define(['N/file', 'N/ui/serverWidget', 'N/query', 'N/record', 'N/task', 'N/ui/me
             log.audit('id_file_obj', id_file_obj);
 
             var records = queryResults.asMappedResults();
+            log.audit('records', records);
+
+            for (var prop in records) {
+                if (records.hasOwnProperty(prop)) {
+                    records[prop].perc_vendido = records[prop].perc_vendido != null ? String(records[prop].perc_vendido.toFixed(7) + '%') : null;
+                    records[prop].perc_recebido = records[prop].perc_recebido != null ? String(records[prop].perc_recebido.toFixed(7) + '%') : null;
+                    records[prop].poc = records[prop].poc != null ? String(records[prop].poc.toFixed(7) + '%') : null;
+                }
+            }
             createList(assistant, records,'fatores', 3);
         }
 

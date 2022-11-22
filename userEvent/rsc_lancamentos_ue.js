@@ -2150,7 +2150,22 @@ const afterSubmit = (context) => {
                                         memo: '',
                                         entity: sqlResults[0].entity,
                                         location: sqlResults[0].location,
-                                        custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary
+                                        custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary,
+                                        custcol_rsc_fieldcliente: nomeProjeto.value
+                                        // entity: loadReg.getValue('entity'),
+                                        // location: loadReg.getValue('location')
+                                    });
+
+                                    /** Contas de resultado 
+                                     * 3111100100 – Receita Imobiliária Fiscal */
+                                    arrayLancamentos[0].line.push({
+                                        account: parametroScript.getParameter('custscript_rsc_cdt_receita_imob_fiscal_1'),
+                                        credit: amount,
+                                        memo: '',
+                                        entity: sqlResults[0].entity,
+                                        location: sqlResults[0].location,
+                                        custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary,
+                                        custcol_rsc_fieldcliente: nomeProjeto.value
                                         // entity: loadReg.getValue('entity'),
                                         // location: loadReg.getValue('location')
                                     });
@@ -2173,7 +2188,8 @@ const afterSubmit = (context) => {
                                     memo: '',
                                     entity: sqlResults[0].entity,
                                     location: sqlResults[0].location,
-                                    custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary
+                                    custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary,
+                                    custcol_rsc_fieldcliente: nomeProjeto.value
                                     // entity: loadReg.getValue('entity'),
                                     // location: loadReg.getValue('location')
                                 });
@@ -2184,7 +2200,61 @@ const afterSubmit = (context) => {
                                     memo: '',
                                     entity: sqlResults[0].entity,
                                     location: sqlResults[0].location,
-                                    custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary
+                                    custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary,
+                                    custcol_rsc_fieldcliente: nomeProjeto.value
+                                    // entity: loadReg.getValue('entity'),
+                                    // location: loadReg.getValue('location')
+                                });
+
+                                arrayLancamentos[0].line.push({
+                                    account: parametroScript.getParameter('custscript_rsc_cdt_apropriacao_1'),
+                                    debit: conta_ApropriacaoReceitaImobiliariaFiscal,
+                                    memo: '',
+                                    entity: sqlResults[0].entity,
+                                    location: sqlResults[0].location,
+                                    custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary,
+                                    custcol_rsc_fieldcliente: nomeProjeto.value
+                                    // entity: loadReg.getValue('entity'),
+                                    // location: loadReg.getValue('location')
+                                });
+
+                                /** Contas de resultado 
+                                 * 3111100200 - Receita Imobiliária Fiscal – Var. Monetária */
+                                arrayLancamentos[0].line.push({
+                                    account: parametroScript.getParameter('custscript_rsc_cdt_rec_imo_fis_var_mon_1'),
+                                    credit: cm.amount,
+                                    memo: '',
+                                    entity: sqlResults[0].entity,
+                                    location: sqlResults[0].location,
+                                    custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary,
+                                    custcol_rsc_fieldcliente: nomeProjeto.value
+                                    // entity: loadReg.getValue('entity'),
+                                    // location: loadReg.getValue('location')
+                                });
+
+                                /** Contas de neutralização 
+                                 * 2811040100 - Neutralização Receita Fiscal
+                                 * 3111190100 - Neutralização Receita Fiscal */
+                                 arrayLancamentos[0].line.push({
+                                    account: parametroScript.getParameter('custscript_rsc_dbt_neutra_receita_fisc_1'),
+                                    debit: conta_ApropriacaoReceitaImobiliariaFiscal,
+                                    memo: '',
+                                    entity: sqlResults[0].entity,
+                                    location: sqlResults[0].location,
+                                    custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary,
+                                    custcol_rsc_fieldcliente: nomeProjeto.value
+                                    // entity: loadReg.getValue('entity'),
+                                    // location: loadReg.getValue('location')
+                                });
+
+                                arrayLancamentos[0].line.push({
+                                    account: parametroScript.getParameter('custscript_rsc_cdt_neutra_receita_fisc_1'),
+                                    credit: conta_ApropriacaoReceitaImobiliariaFiscal,
+                                    memo: '',
+                                    entity: sqlResults[0].entity,
+                                    location: sqlResults[0].location,
+                                    custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary,
+                                    custcol_rsc_fieldcliente: nomeProjeto.value
                                     // entity: loadReg.getValue('entity'),
                                     // location: loadReg.getValue('location')
                                 });
@@ -2195,7 +2265,49 @@ const afterSubmit = (context) => {
                                     memo: '',
                                     entity: sqlResults[0].entity,
                                     location: sqlResults[0].location,
-                                    custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary
+                                    custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary,
+                                    custcol_rsc_fieldcliente: nomeProjeto.value
+                                    // entity: loadReg.getValue('entity'),
+                                    // location: loadReg.getValue('location')
+                                });
+
+                                /** Contas de resultado 
+                                 * 3111100100 – Receita Imobiliária Fiscal */
+                                 arrayLancamentos[0].line.push({
+                                    account: parametroScript.getParameter('custscript_rsc_cdt_receita_imob_fiscal_1'),
+                                    debit: conta_ApropriacaoReceitaImobiliariaFiscal,
+                                    memo: '',
+                                    entity: sqlResults[0].entity,
+                                    location: sqlResults[0].location,
+                                    custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary,
+                                    custcol_rsc_fieldcliente: nomeProjeto.value
+                                    // entity: loadReg.getValue('entity'),
+                                    // location: loadReg.getValue('location')
+                                });
+
+                                /** Contas de neutralização 
+                                 * 2811040100 - Neutralização Receita Fiscal
+                                 * 3111190100 - Neutralização Receita Fiscal */
+                                 arrayLancamentos[0].line.push({
+                                    account: parametroScript.getParameter('custscript_rsc_dbt_neutra_receita_fisc_1'),
+                                    debit: conta_ApropriacaoReceitaImobiliariaFiscal,
+                                    memo: '',
+                                    entity: sqlResults[0].entity,
+                                    location: sqlResults[0].location,
+                                    custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary,
+                                    custcol_rsc_fieldcliente: nomeProjeto.value
+                                    // entity: loadReg.getValue('entity'),
+                                    // location: loadReg.getValue('location')
+                                });
+
+                                arrayLancamentos[0].line.push({
+                                    account: parametroScript.getParameter('custscript_rsc_cdt_neutra_receita_fisc_1'),
+                                    credit: conta_ApropriacaoReceitaImobiliariaFiscal,
+                                    memo: '',
+                                    entity: sqlResults[0].entity,
+                                    location: sqlResults[0].location,
+                                    custcol_rsc_devido_subsidiary: sqlResults[0].subsidiary,
+                                    custcol_rsc_fieldcliente: nomeProjeto.value
                                     // entity: loadReg.getValue('entity'),
                                     // location: loadReg.getValue('location')
                                 });

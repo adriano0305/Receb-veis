@@ -1,65 +1,99 @@
 /**
-* @NApiVersion 2.1
-* @NScriptType MapReduceScript
-* @author Adriano Barbosa
-* @since 2020.10
+ *@NApiVersion 2.1
+*@NScriptType MapReduceScript
 */
 
-define(['N/log', 'N/record', 'N/search'], function (log, record, search) {
+const opcoes = {
+    enableSourcing: true,
+    ignoraMandatoryFields: true
+}
+
+define(['N/log', 'N/record', 'N/search'], function(log, record, search) {
+const atualizarTransacao = (tipo, idInterno, valores) => {
+    try {
+        var loadReg = record.load({type: tipo, id: idInterno});
+
+        loadReg.setValue('customform', valores.customform)
+        .save(opcoes);
+    
+        log.audit('atualizarTransacao', {status: 'Sucesso', tipo: tipo, idInterno: idInterno, valores});
+    } catch(e) {
+        log.error('atualizarTransacao', {status: 'Erro', tipo: tipo, idInterno: idInterno, valores: valores, msg: e});
+    }   
+}
 
 function getInputData(context) {
-    return search.create({type: "purchaseorder",
-        filters: [
-           ["shipping","is","F"], "AND", 
-           ["taxline","is","F"], "AND", 
-           ["mainline","is","T"], "AND", 
-           ["type","anyof","PurchOrd"], "AND", 
-           ["internalid","anyof","279300"]
+    log.audit('getInputData', context);
+
+    var bsc = search.create({
+        type: "purchaseorder",
+        filters:
+        [
+           ["mainline","is","F"], 
+           "AND", 
+           ["type","anyof","PurchOrd"], 
+           "AND", 
+           [["formulatext: {targetlocation}","isnotempty",""],"OR",["formulatext: {targetsubsidiary}","isnotempty",""]]
+        //    , "AND", 
+        //    ["internalid","anyof","810163"]
         ],
-        columns: [
-            "datecreated","tranid","type","customform"
+        columns:
+        [
+           search.createColumn({
+              name: "datecreated",
+              summary: "GROUP",
+              sort: search.Sort.DESC,
+              label: "Data de criação"
+           }),
+           search.createColumn({
+              name: "internalid",
+              summary: "GROUP",
+              label: "ID interno"
+           }),
+           search.createColumn({
+              name: "tranid",
+              summary: "GROUP",
+              label: "Número do documento"
+           })
         ]
-    })
+     });
+
+    return bsc;
 }
 
 function map(context) {
-    var resultBsc = JSON.parse(context['value']);
-    log.audit('resultBsc', resultBsc);   
+    // log.audit('map', context);
 
-    var transacao;
-    var tipo = resultBsc.values.type.text;
+    const resultBsc = JSON.parse(context.value);
+    log.audit('map', resultBsc);
+    
+    try {
+        var loadReg = record.load({type: 'purchaseorder', id: resultBsc.values['GROUP(internalid)'].value});
 
-    if (tipo == 'Pedido de compra') {
-        transacao = pedidoCompras({tipo: 'purchaseorder', dados: resultBsc});
+        var numDoc = resultBsc.values['GROUP(tranid)'];
+
+        var linhaItens = loadReg.getLineCount('item');
+
+        for (i=0; i<linhaItens; i++) {
+            loadReg.setSublistValue('item', 'targetlocation', i, '')
+            .setSublistValue('item', 'targetlocation', i, '')
+        }
+    
+        loadReg.save(opcoes);    
+        log.audit('Sucesso', {numDoc: numDoc});
+    } catch(e) {
+        log.error('Erro', {numDoc: numDoc, msg: e});
     } 
 }
 
-const pedidoCompras = (info) => {
-    try {
-        var loadReg = record.load({type: info.tipo, id: info.dados.id});
+function reduce(context) {}
 
-        loadReg.setValue('customform', 117) // Pedido de Compra BR
-        .save({ignoreMandatoryFields: true});
+function summarize(summary) {}
 
-        log.audit('pedidoCompras', {status: 'Sucesso', tranid: info.dados.values.tranid});
-    } catch(e) {
-        log.error('pedidoCompras', {status: 'Sucesso', tranid: info.dados.values.tranid, msg: e});
-    }    
+return {
+    getInputData: getInputData,
+    map: map,
+    reduce: reduce,
+    summarize: summarize
 }
-
-function summarize(summary) {
-    var type = summary.toString();
-    log.audit(type, 
-        '"Uso Consumido:" '+summary.usage+
-        ', "Número de Filas:" '+summary.concurrency+
-        ', "Quantidade de Saídas:" '+summary.yields
-    );
-    var contents = '';
-    summary.output.iterator().each(function (key, value) {
-        contents += (key + ' ' + value + '\n');
-        return true;
-    });
-}
-    
-return { 'getInputData': getInputData, 'map': map, 'summarize': summarize }
 });

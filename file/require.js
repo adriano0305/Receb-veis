@@ -1,3 +1,30 @@
+require(['N/record'], function(record) {
+    var sp = 0;
+
+    var loadReg = record.load({
+        type: 'vendorpayment',
+        id: 675434,
+        isDynamic: true
+    });
+    console.log('loadReg', loadReg);
+
+    var linhasAplicadas = loadReg.getLineCount('apply');
+
+    for (i=0; i<linhasAplicadas; i++) {
+        loadReg.selectLine('apply', i);
+        var internalid = loadReg.getCurrentSublistValue('apply', 'internalid');
+        console.log(i, {internalid: internalid}); 
+
+        if (internalid == 675434) {
+            console.log(i, {status: 'localizado', internalid: internalid, id: 675434}); 
+            sp += loadReg.getCurrentSublistValue('apply', 'total');
+            console.log('sp', sp); 
+        } else {
+            console.log(i, {status: 'não localizado', internalid: internalid, id: 675434}); 
+        }      
+    }
+});
+
 require(['N/query'], function(query) {
     var mySubsidiaryQuery = query.create({type: 'subsidiary'});
 

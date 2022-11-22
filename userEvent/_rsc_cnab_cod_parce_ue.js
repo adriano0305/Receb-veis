@@ -44,72 +44,78 @@ define(['N/record'],
 
             var newRecord =scriptContext.newRecord
 
-            var countParc = newRecord.getLineCount({
-                sublistId: "installment"
-            })
-            log.debug("countParc",countParc)
-            
-
-            if(countParc > 0){
-
-                var curId = newRecord.id
-
-            var curRec = record.load({
-                type: "vendorbill",
-                id: curId,
-                isDynamic: true,                
-            })           
-
-                for(var i = 0; i < countParc; i++){
-
-                    try{
-
-                        var curLine = curRec.selectLine({
-                            sublistId: "installment",
-                            line: i
-                        })
-    
-                        var lineId = curRec.getCurrentSublistValue({
-                            sublistId: "installment",
-                            fieldId: "id"
-                        })
-    
-                        curRec.setCurrentSublistValue({
-                            sublistId: "installment",
-                            fieldId: "custrecord_rsc_cnab_codigo",
-                            value:(parseInt(lineId)).toString(36) + '-' + (parseInt(curId)).toString(36),
-                            ignoreFieldChange: true                        
-                        })
-                        curRec.setCurrentSublistValue({
-                            sublistId: "installment",
-                            fieldId: "custrecord_rsc_cnab_id_parcela",
-                            value:(lineId),
-                            ignoreFieldChange: true                        
-                        })
-                        curRec.commitLine({
-                            sublistId: "installment",
-                            ignoreRecalc: true
-                        })
-    
-                        log.debug("curLineId",lineId)
-
-                    } catch(e){
-                        
-                        log.audit("e",e)
-                        
-                    }
-
-                   
-
-                }
-                try{
-                    curRec.save()
-                } catch(e){
-                    log.audit("e",e)
-                }
+            if (scriptContext.type !=  'delete') {
+                var countParc = newRecord.getLineCount({
+                    sublistId: "installment"
+                })
+                log.debug("countParc",countParc)
                 
-
+    
+                if(countParc > 0){
+    
+                var curId = newRecord.id
+                    if(curId) {
+                        var curRec = record.load({
+                            type: "vendorbill",
+                            id: curId,
+                            isDynamic: true,                
+                        })       
+                    }
+                   
+    
+                    for(var i = 0; i < countParc; i++){
+    
+                        try{
+    
+                            var curLine = curRec.selectLine({
+                                sublistId: "installment",
+                                line: i
+                            })
+        
+                            var lineId = curRec.getCurrentSublistValue({
+                                sublistId: "installment",
+                                fieldId: "id"
+                            })
+        
+                            curRec.setCurrentSublistValue({
+                                sublistId: "installment",
+                                fieldId: "custrecord_rsc_cnab_codigo",
+                                value:(parseInt(lineId)).toString(36) + '-' + (parseInt(curId)).toString(36),
+                                ignoreFieldChange: true                        
+                            })
+                            curRec.setCurrentSublistValue({
+                                sublistId: "installment",
+                                fieldId: "custrecord_rsc_cnab_id_parcela",
+                                value:(lineId),
+                                ignoreFieldChange: true                        
+                            })
+                            curRec.commitLine({
+                                sublistId: "installment",
+                                ignoreRecalc: true
+                            })
+        
+                            log.debug("curLineId",lineId)
+    
+                        } catch(e){
+                            
+                            log.audit("e",e)
+                            
+                        }
+    
+                       
+    
+                    }
+                    try{
+                        curRec.save()
+                    } catch(e){
+                        log.audit("e",e)
+                    }
+                    
+    
+                }
             }
+
+            
 
         }
 

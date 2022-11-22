@@ -93,6 +93,7 @@ function saveRecord(ctx) {
         if (check ==  true) {
             jsonAtualizado.push({
                 "data": page.getSublistValue({sublistId: 'custpage_sublist', fieldId: 'custpage_data', line: i}),
+                "dataVenci": page.getSublistValue({sublistId: 'custpage_sublist', fieldId: 'custpage_data_venci', line: i}),
                 "subsidiary": page.getSublistValue({sublistId: 'custpage_sublist', fieldId: 'custpage_subsidiary', line: i}),
                 "vendor": page.getSublistValue({sublistId: 'custpage_sublist', fieldId: 'custpage_fornecedor', line: i}),
                 "numeroParcelas": page.getSublistValue({sublistId: 'custpage_sublist', fieldId: 'custpage_prestacoes', line: i}),

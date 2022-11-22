@@ -19,7 +19,7 @@ define(['N/file', 'N/record', 'N/query', 'N/runtime', './rsc_module_aprop_querys
             }
 
         function _getAccountBalance(account, period, subsidiary, job){
-                //     log.debug({title: '_getAccountBalance', details: {account: account, period: period, subsidiary: subsidiary, job: job}});
+                    log.debug({title: '_getAccountBalance', details: {account: account, period: period, subsidiary: subsidiary, job: job}});
 
                         var sql = 'select abs(sum(transactionaccountingline.amount)) amount, account.acctnumber, ' +
                                 '               transactionline.subsidiary ' +
@@ -43,10 +43,10 @@ define(['N/file', 'N/record', 'N/query', 'N/runtime', './rsc_module_aprop_querys
                 //     log.debug({title: '_getAccountBalance', details: {results: results}});
                     if (results.length > 0){
                             var result = results[0];
-                            log.debug({title: '_getAccountBalance', details: {result: result}});
-                            return result['amount'];
+                        //     log.debug({title: '_getAccountBalance', details: {result: result}});
+                            return result['amount'].toFixed(7);
                     } else {
-                        log.debug({title: '_getAccountBalance', details: {result: 0}});
+                        // log.debug({title: '_getAccountBalance', details: {result: 0}});
                             return 0;
                     }
             }
@@ -64,21 +64,33 @@ define(['N/file', 'N/record', 'N/query', 'N/runtime', './rsc_module_aprop_querys
                             /* Calcula Valor total. */
                             var valorTotal = 0;
                             for (var i = 0; i < results.length; i++){
-                                    valorTotal += _getAccountBalance(results[i].custrecord_rsc_conta_fator,period,subsidiary, job);
-                                    log.error({title: "Valor Total ", details: valorTotal});
+                                //     log.audit('_getRateioContaAndValue for 1', {
+                                //         'results[i].custrecord_rsc_conta_fator': results[i].custrecord_rsc_conta_fator,
+                                //         period: period,
+                                //         subsidiary: subsidiary,
+                                //         job: job
+                                //     });
+                                    valorTotal += _getAccountBalance(results[i].custrecord_rsc_conta_fator, period, subsidiary, job);
+                                //     log.debug({title: "Valor Total ", details: valorTotal});
                             }
 
                             for (var i = 0; i < results.length; i++){
                                     /* Calcula Fator */
-                                    var valorCalculado = _getAccountBalance(results[i].custrecord_rsc_conta_fator, period,subsidiary, job);
-                                    log.error({title:'Valor Calculado ', details: valorCalculado});
+                                //     log.audit('_getRateioContaAndValue for 2', {
+                                //         'results[i].custrecord_rsc_conta_fator': results[i].custrecord_rsc_conta_fator,
+                                //         period: period,
+                                //         subsidiary: subsidiary,
+                                //         job: job
+                                //     });
+                                    var valorCalculado = _getAccountBalance(results[i].custrecord_rsc_conta_fator, period, subsidiary, job);
+                                //     log.debug({title:'Valor Calculado ', details: valorCalculado});
                                     //var valorConta = valor * (valorCalculado/ valorTotal);
                                     var valorFator = (valorCalculado/ valorTotal);
                                     var valorArr = {'conta': results[i].custrecord_rsc_conta_destino, 'valor': valorFator}
                                     var scriptObj = runtime.getCurrentScript();
                                     response.push(valorArr);
                             }
-                            log.audit('_getRateioContaAndValue', {response: response});
+                        //     log.audit('_getRateioContaAndValue', {response: response});
                             return response;
                     }
                     return null;
@@ -164,7 +176,7 @@ define(['N/file', 'N/record', 'N/query', 'N/runtime', './rsc_module_aprop_querys
 
         function criarArquivo(dados) {
                 var novoArquivo = file.create({
-                        name: 'getCalculo.txt',
+                        name: dados.subsidiary + '_' + dados.id,
                         fileType: file.Type.PLAINTEXT,
                         folder: 4083, // sqlAprop
                         contents: JSON.stringify(dados)
@@ -187,13 +199,13 @@ define(['N/file', 'N/record', 'N/query', 'N/runtime', './rsc_module_aprop_querys
          * @since 2015.2
          */
         const getInputData = (inputContext) => {
+            log.audit('getInputData', inputContext);
             const script = runtime.getCurrentScript();
             const period = script.getParameter({name: 'custscript_rsc_aprop_periodop'});
             const trandate = script.getParameter({name: 'custscript_rsc_aprop_trandateop'});
             const idTipoRegistro = script.getParameter({name: 'custscript_rsc_tipooperacao'});
             log.audit('getInputData', {script: script, period: period, trandate: trandate, idTipoRegistro: idTipoRegistro});
             var calculoApropriacao = apropQuery.getCalculo(idTipoRegistro, period);
-            criarArquivo(calculoApropriacao);
             return calculoApropriacao;
         }
 
@@ -220,6 +232,7 @@ define(['N/file', 'N/record', 'N/query', 'N/runtime', './rsc_module_aprop_querys
                     const period = script.getParameter({name: 'custscript_rsc_aprop_periodop'});
                     const trandate = script.getParameter({name: 'custscript_rsc_aprop_trandateop'});
                     var record = JSON.parse(mapContext.value);
+                    criarArquivo(record);
                     log.audit('record', record);
                     /* Validar a cia está no perido de apropriação. */
                     if (record.inicioapropriacao == null){
@@ -240,11 +253,13 @@ define(['N/file', 'N/record', 'N/query', 'N/runtime', './rsc_module_aprop_querys
                                     var job = getSPEObra(pesqSub, record.id).codProjeto;
                                     var loc = getSPEObra(pesqSub, record.id).codLocation;
                             } else {
-                                    if (i > 1){
+                                //     if (i > 1){ 
+                                       if (i >= 1){ 
                                             var contas = keyNames[i].split('_');
                                             var partida = contas[1];
                                             var contrapartida = contas[2];
                                             var componenteId = contas[3];
+                                        //     log.audit('componenteId', componenteId);
                                             var operacaoInvertida = contas[4];
                                             var lancarDiferenca = contas[5];
                                             var lancarMaiorZero = contas[6];
@@ -252,7 +267,7 @@ define(['N/file', 'N/record', 'N/query', 'N/runtime', './rsc_module_aprop_querys
                                             var rateio = contas[8];
                                         //     log.debug({title: 'Contas i > 1', details: contas});
                                             var valor = (record[keyNames[i]] == null? 0:record[keyNames[i]]);
-                                            log.audit('map', {i: i, valor: valor});
+                                        //     log.audit('map', {i: i, valor: valor});
                                             var lines = [];
                                             if (valor !=  0){
                                                     var continuar = false;
@@ -278,23 +293,30 @@ define(['N/file', 'N/record', 'N/query', 'N/runtime', './rsc_module_aprop_querys
                                                                             typelancamento1 = 'debit';
                                                                             typelancamento2 = 'credit';
                                                                     }
-                                                                    lines.push({account: partida, type: typelancamento2, value: valor});
+
+                                                                    if (partida != '' && partida != null) {
+                                                                        lines.push({account: partida, type: typelancamento2, value: valor});
+                                                                    }
+                                                                   
                                                                     var valorRestante = valor;
 
-                                                                    for (var j = 0; j < contas.length; j++){
-                                                                            lines.push({account: contas[j].conta, type: typelancamento1, value: contas[j].valor})
+                                                                    if (contas != null) {
+                                                                        for (var j = 0; j < contas.length; j++){
+                                                                                lines.push({account: contas[j].conta, type: typelancamento1, value: contas[j].valor})
+                                                                        }
                                                                     }
-
-
                                                             } else {
-                                                                    if (operacaoInvertida === 't'){
+                                                                if ((contrapartida != '' && contrapartida != null) && (partida != '' && partida != null)) {
+                                                                        if (operacaoInvertida === 't'){
                                                                         //     log.debug({title:'Operacao Invertida', details: {operacaoInvertida: operacaoInvertida, valor: valor}})
-                                                                            lines.push({account: contrapartida, type: 'credit', value: valor});
-                                                                            lines.push({account: partida, type: 'debit', value: valor});
-                                                                    } else {
-                                                                            lines.push({account: partida, type: 'credit', value: valor});
-                                                                            lines.push({account: contrapartida, type: 'debit', value: valor});
-                                                                    }
+                                                                                lines.push({account: contrapartida, type: 'credit', value: valor});
+                                                                                lines.push({account: partida, type: 'debit', value: valor});
+                                                                        } else {
+                                                                                lines.push({account: partida, type: 'credit', value: valor});
+                                                                                lines.push({account: contrapartida, type: 'debit', value: valor});
+                                                                        }
+                                                                }
+                                                                    
                                                             }
 
                                                             var header = [];
@@ -327,7 +349,7 @@ define(['N/file', 'N/record', 'N/query', 'N/runtime', './rsc_module_aprop_querys
 
                     }
             } catch (e){
-                    log.error({title: 'Error Processing', details: e})
+                    log.error({title: 'Erro map', details: e});
             }
         }
 
@@ -347,27 +369,28 @@ define(['N/file', 'N/record', 'N/query', 'N/runtime', './rsc_module_aprop_querys
          * @since 2015.2
          */
         const reduce = (reduceContext) => {
-            try{
-                    log.audit({title:'Reduce', details: reduceContext});
-                    var context = JSON.parse(reduceContext.key);
-                    log.audit({title: 'context[0]', details: context[0]});
+           
+                // log.audit({title:'Reduce', details: reduceContext});
+                var context = JSON.parse(reduceContext.key);
+                log.audit('reduce', {'context[0]': context[0]});
 
+                try{
                     if (context[0] != null){
                         //     log.audit({title: 'Data', details: {formatDate: formatDate(context[0].trandate), trandate: context[0].trandate}});
 
                             /* Obtem o valor de saldo da conta, para calcular o valor a ser lançado */
                             var accountBalance = 0;
                             if (context[0].operacaoInvertida === 't'){
-                                    accountBalance = _getAccountBalance(context[0].line[1].account, context[0].postingperiod,context[0].subsidiary, context[0].project);
+                                    accountBalance = _getAccountBalance(context[0].line[1].account, context[0].postingperiod, context[0].subsidiary, context[0].project);
                             } else {
-                                    accountBalance = _getAccountBalance(context[0].line[0].account, context[0].postingperiod,context[0].subsidiary, context[0].project);
+                                    accountBalance = _getAccountBalance(context[0].line[0].account, context[0].postingperiod, context[0].subsidiary, context[0].project);
                             }
 
                             var journal = record.create({type: record.Type.JOURNAL_ENTRY, isDynamic: false});
                             journal.setValue({fieldId: 'subsidiary', value: context[0].subsidiary});
-                            journal.setValue({ fieldId: 'custbody_rsc_projeto_obra_gasto_compra', value: context[0].project });
+                            journal.setValue({fieldId: 'custbody_rsc_projeto_obra_gasto_compra', value: context[0].project});
                             journal.setValue({fieldId: 'postingperiod', value: context[0].period});
-                            journal.setValue({fieldId: 'trandate', value: formatDate(context[0].trandate) });
+                            journal.setValue({fieldId: 'trandate', value: formatDate(context[0].trandate)});
                             journal.setValue({fieldId: 'memo', value: 'Apropriação Imobiliaria'});
                             journal.setValue({fieldId: 'custbody_rsc_aprop_flag', value: true});
                             journal.setValue({fieldId: 'custbody_rsc_aprop_comp_aprop', value: context[0].componenteId});
@@ -390,7 +413,7 @@ define(['N/file', 'N/record', 'N/query', 'N/runtime', './rsc_module_aprop_querys
 
                                         if (accountBalance < 0){
                                                 balance = accountBalance - context[0].valor;
-                                                log.audit('accountBalance < 0', accountBalance);
+                                                // log.audit('accountBalance < 0', accountBalance);
                                         } else {
                                                 if (context[0].contaCredora === 't'){
                                                         var valorCalc = context[0].valor;
@@ -405,9 +428,9 @@ define(['N/file', 'N/record', 'N/query', 'N/runtime', './rsc_module_aprop_querys
                                     }
                                     if (context[0].rateio === 't' && i > 0){
                                             balance = balance * linha.value;
-                                            log.error({title: 'Account Balance', details:balance});
+                                        //     log.debug({title: 'Account Balance', details:balance});
                                     }
-                                    log.audit('Saldo inicial', accountBalance);
+                                //     log.audit('Saldo inicial', accountBalance);
                                     journal.setSublistValue({
                                             sublistId: 'line',
                                             fieldId: linha.type,
@@ -434,7 +457,8 @@ define(['N/file', 'N/record', 'N/query', 'N/runtime', './rsc_module_aprop_querys
                             log.audit({title: 'Journal Entry', details:idJournal});
                     }
             } catch (e){
-                    log.error({title: 'Error ', details: e});
+                    log.error({title: 'Error reduce', details: e});
+                    log.error('JSON error reduce', context);
             }
         }
 
@@ -465,6 +489,7 @@ define(['N/file', 'N/record', 'N/query', 'N/runtime', './rsc_module_aprop_querys
             const period = script.getParameter({name: 'custscript_rsc_aprop_periodop'});
             const trandate = script.getParameter({name: 'custscript_rsc_aprop_trandateop'});
             const idTipoRegistro = script.getParameter({name: 'custscript_rsc_tipooperacao'});
+        //     log.audit('summarize', {script: script, period: period, trandate: trandate, idTipoRegistro: idTipoRegistro});
             switch (idTipoRegistro) {
                     case 'CUSTOS':
                             var createJETask = task.create({
@@ -478,7 +503,7 @@ define(['N/file', 'N/record', 'N/query', 'N/runtime', './rsc_module_aprop_querys
                             });
 
                             var idCreateJETask = createJETask.submit();
-                            log.audit(idTipoRegistro, {createJETask: createJETask, idCreateJETask: idCreateJETask});
+                            log.audit('summarize', {period: period, trandate: trandate, idCreateJETask: idCreateJETask});
 
                             break;
                     case 'REF':
@@ -493,7 +518,7 @@ define(['N/file', 'N/record', 'N/query', 'N/runtime', './rsc_module_aprop_querys
                             });
 
                             var idCreateJETask = createJETask.submit();
-                            log.audit(idTipoRegistro, {createJETask: createJETask, idCreateJETask: idCreateJETask});
+                            log.audit('summarize', {period: period, trandate: trandate, idCreateJETask: idCreateJETask});
 
                             break;
                     case 'DRE':
@@ -508,7 +533,7 @@ define(['N/file', 'N/record', 'N/query', 'N/runtime', './rsc_module_aprop_querys
                             });
 
                             var idCreateJETask = createJETask.submit();
-                            log.audit(idTipoRegistro, {createJETask: createJETask, idCreateJETask: idCreateJETask});
+                            log.audit('summarize', {period: period, trandate: trandate, idCreateJETask: idCreateJETask});
 
                             break;
                     case 'VAL_376584_5843489_SB1_393':
@@ -527,7 +552,7 @@ define(['N/file', 'N/record', 'N/query', 'N/runtime', './rsc_module_aprop_querys
                                     body: body
                             });
 
-                            log.audit(idTipoRegistro, {host: host, author: author, subject: subject, body: body});
+                            log.audit('summarize', {host: host, author: author, recipients: recipients, subject: subject, body: body});
 
                             break;
                     default:

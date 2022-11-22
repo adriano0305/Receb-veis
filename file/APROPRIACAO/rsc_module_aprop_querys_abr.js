@@ -19,7 +19,7 @@ define(['N/file', 'N/query'],
                     headersAll = query.runSuiteQL({
                             query: 'select custrecord_rsc_fatores_operacao, id from customrecord_rsc_param_fatores where isinactive = \'F\''
                     }).asMappedResults();
-                    log.audit('headersAll', headersAll);
+                //     log.audit('headersAll', headersAll);
 
                     dividendoAll = query.runSuiteQL({query: 'select ' +
                                 '   custrecord_rsc_sublist_cp_info amount, ' +
@@ -87,7 +87,7 @@ define(['N/file', 'N/query'],
             }
 
             function getFatorIndividual(idFator, period){
-                log.audit('getFatorIndividual', {idFator: idFator, period: period});
+                // log.audit('getFatorIndividual', {idFator: idFator, period: period});
 
                     var headers = headersAll.filter(word => word.id === idFator);
                 //     log.audit('getFatorIndividual', {headers: headers});
@@ -149,7 +149,7 @@ define(['N/file', 'N/query'],
                                             }
                                     }
 
-                                    sqlValores = 'round(((((abs(' + sqlDividendo + ')) / (abs(' + sqlDivisor + '))))), 5)';
+                                    sqlValores = 'round(((((abs(' + sqlDividendo + ')) / (abs(' + sqlDivisor + '))))), 7)';
                                 //     log.debug({title: 'Sql fatores Totais ', details : sqlValores});
                             }
                     log.debug({title: 'Sql Apropriação ', details: sqlValores});
@@ -157,7 +157,7 @@ define(['N/file', 'N/query'],
             }
 
             function getComponentes(id, period){
-                log.audit('getComponentes', {id: id, period: period});
+                // log.audit('getComponentes', {id: id, period: period});
 
                     var sql = 'select a.id, a.custrecord_rsc_aprop_componente componente, custrecord_rsc_aprop_partida partida, ' +
                         'custrecord_rsc_aprop_contrapartida contrapartida, custrecord_rsc_aprop_perc_fator percfator, ' +
@@ -168,7 +168,7 @@ define(['N/file', 'N/query'],
                         'join customlist_rsc_aprop_tipo_aprop b on a.custrecord_rsc_aprop_tipo_apropriacao  = b.id ' +
                         'where a.isinactive = \'F\' and b.scriptid = \'' + id + '\' order by a.custrecord_rsc_aprop_sequencia';
                     var queryResults = query.runSuiteQL({query: sql}).asMappedResults();
-                    log.audit('getComponentes queryResults', queryResults);
+                //     log.audit('getComponentes queryResults', queryResults);
                     
                     var sqlRetorno = '';
                     if ( queryResults.length > 0){
@@ -216,7 +216,7 @@ define(['N/file', 'N/query'],
                                                     sqlDivisor += ')';
                                             }
                                     }
-                                    sqlRet = 'round(((( ' + sqlDivisor + ') * '+ percentual + ')), 2)' + queryResult['componente']
+                                    sqlRet = 'round(((( ' + sqlDivisor + ') * '+ percentual + ')), 7)' + queryResult['componente']
                                         +'_' + queryResult['partida'] +'_' + queryResult['contrapartida'] +'_' + queryResult['id']
                                         +'_' + queryResult['operacaoinvertida'] + '_' + queryResult['nlancadif'] +
                                         '_' + queryResult['lancar_maior_zero'] + '_' + queryResult['contacredora'] +
@@ -225,17 +225,17 @@ define(['N/file', 'N/query'],
                                 //     log.audit('getComponentes', {sqlRetorno: sqlRetorno});
                             }
                     }
-                    log.audit('getComponentes', {sqlRetorno: sqlRetorno});
+                //     log.audit('getComponentes', {sqlRetorno: sqlRetorno});
                     return sqlRetorno;
             }
 
             function getCalculo(idOperacao, period){
-                log.audit('getCalculo', {idOperacao: idOperacao, period: period});
+                // log.audit('getCalculo', {idOperacao: idOperacao, period: period});
                     _loadAllValues();
                     var sql = 'select substr(subsidiary.name,1,4) subsidiary, job.id, custentity_rsc_term_cl_suspensiva inicioApropriacao, ' +
                         ' ' + getComponentes(idOperacao, period) + ' from subsidiary, job\n' +
                         // 'where 1 = subsidiary.custrecordtpemp and job.custentity_rsc_aprop_subsidiaria = subsidiary.id order by 1';
-                        'where 1 = subsidiary.custrecordtpemp and job.custentity_rsc_aprop_subsidiaria = subsidiary.id and job.id in (21906,21910,21922,21952) order by 1'
+                        'where 1 = subsidiary.custrecordtpemp and job.custentity_rsc_aprop_subsidiaria = subsidiary.id and job.id in (21910,21922) order by 1'
 
                          // 74 PARQUE ECOVILLE F4 - BARIGUI
                         // 'where 1 = subsidiary.custrecordtpemp and job.custentity_rsc_aprop_subsidiaria = subsidiary.id and job.id in (21922) order by 1';
@@ -250,14 +250,27 @@ define(['N/file', 'N/query'],
                         // 'where 1 = subsidiary.custrecordtpemp and job.custentity_rsc_aprop_subsidiaria = subsidiary.id and job.id in (52135) order by 1';   
                         
                         // TUDO
-                        // 'where 1 = subsidiary.custrecordtpemp and job.custentity_rsc_aprop_subsidiaria = subsidiary.id and job.id in (21922, 21925, 51506, 52135) order by 1';  
-                    log.error({title:'getCalculo', details: sql});
+                        // 'where 1 = subsidiary.custrecordtpemp and job.custentity_rsc_aprop_subsidiaria = subsidiary.id order by 1';  
+                //     log.error({title:'getCalculo', details: sql});
                     var queryResults = query.runSuiteQL({
                             query: sql
                     });
-                    var records = queryResults.asMappedResults();
+                    var records = queryResults.asMappedResults();                    
+                    criarArquivo(records);
                     return records
             }
+
+            function criarArquivo(dados) {
+                var novoArquivo = file.create({
+                        name: 'getCalculo',
+                        fileType: file.Type.PLAINTEXT,
+                        folder: 4083, // sqlAprop
+                        contents: JSON.stringify(dados)
+                });        
+                // Save the file
+                var id_novo_arquivo = novoArquivo.save();
+                // log.audit('id_novo_arquivo', id_novo_arquivo);
+        }
 
         return {getCalculo}
 

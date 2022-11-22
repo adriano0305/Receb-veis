@@ -208,10 +208,10 @@ function onRequest(ctx) {
                 break;
 
                 case 11:
-                    inicioSegregacao = "01/10/"+ (ano).toString();
-                    dataVigencia = "31/10/" + ano.toString();
-                    pos365 = "01/11/" + anoPosterior.toString();
-                    month = periodo.nov;
+                    inicioSegregacao = "01/09/"+ (ano).toString();
+                    dataVigencia = "30/09/" + ano.toString();
+                    pos365 = "01/10/" + ano.toString();
+                    month = periodo.out;
                 break;
 
                 case 12:

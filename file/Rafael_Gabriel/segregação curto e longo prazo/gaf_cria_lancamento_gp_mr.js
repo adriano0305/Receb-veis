@@ -142,7 +142,8 @@ function map(context) {
         .setValue('subsidiary', jsonLancamentos.subsidiary)
         .setValue('custbodysegregacao_curt_long', jsonLancamentos.checkbox)
         .setValue('custbody_ref_parcela_2', jsonLancamentos.idFatura)
-        .setValue('memo', dados.memo.fornecedores);
+        .setValue('memo', dados.memo.fornecedores)
+        .setValue('custbody_rsc_vencimento_segregacao', new Date(jsonLancamentos.dataVenci));
         
         // if (jsonLancamentos.tipoSegreg == "Curto Prazo") {
         //     lancamento.setValue('memo', dados.memo.curtoPrazo)

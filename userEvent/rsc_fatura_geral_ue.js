@@ -69,6 +69,7 @@ const localizarParcelas = (idFatura) => {
 
     var sql = "SELECT t.id, t.status, t.custbody_rsc_projeto_obra_gasto_compra, t.duedate, t.tranid, t.custbodyrsc_tpparc, t.custbody_rsc_tran_unidade, t.custbody_rsc_amortizada, t.custbody_rsc_data_pagamento, "+
     "t.custbody_rsc_reparcelamento_origem, t.custbody_rsc_reparcelamento_destino, t.foreigntotal, t.shipdate, t.closedate, t.foreignamountpaid, t.foreignamountunpaid, t.custbody_rsc_indice, "+
+    "t.custbody_rsc_cnab_inst_status_ls, "+
     "tl.item, tl.quantity, tl.rate, tl.foreignamount "+
     "FROM transaction as t "+
     "INNER JOIN transactionline AS tl ON (tl.transaction = t.id) "+
@@ -385,7 +386,8 @@ const localizarParcelas = (idFatura) => {
                         valorPago: amortizada,
                         documento: sqlResults[prop].tranid,
                         status: status,
-                        indice: sqlResults[prop].custbody_rsc_indice
+                        indice: sqlResults[prop].custbody_rsc_indice,
+                        statusCNAB: sqlResults[prop].custbody_rsc_cnab_inst_status_ls
                     });
                 } else {
                     const seek = arrayParcelas.find(parcela => parcela.ver === sqlResults[prop].id);
@@ -412,7 +414,8 @@ const localizarParcelas = (idFatura) => {
                             valorPago: amortizada,
                             documento: sqlResults[prop].tranid,
                             status: status,
-                            indice: sqlResults[prop].custbody_rsc_indice
+                            indice: sqlResults[prop].custbody_rsc_indice,
+                            statusCNAB: sqlResults[prop].custbody_rsc_cnab_inst_status_ls
                         });
                     }
                 }                 
@@ -446,7 +449,7 @@ const localizarParcelas = (idFatura) => {
 }
 
 const validarVencimento = (duedate) => {
-    log.audit('validarVencimento', duedate);
+    // log.audit('validarVencimento', duedate);
 
     const hoje = new Date();
 
@@ -626,6 +629,13 @@ const sublista_fluxoPagamentos = (form, idFatura) => {
         label: 'Vencimento'
     });
 
+    var statusCNAB = sublistaParcelas.addField({
+        id: custPage+'status_cnab',
+        type: 'select',
+        label: 'Status CNAB',
+        source: 'customlist_rsc_cnab_status'	
+    });
+
     var tipoParcela = sublistaParcelas.addField({
         id: custPage+'tipo_parcela',
         type: 'text',
@@ -738,6 +748,12 @@ const sublista_fluxoPagamentos = (form, idFatura) => {
                     value: lookupIndice.name
                 });
             }
+
+            sublistaParcelas.setSublistValue({
+                id: statusCNAB.id,
+                line: i,
+                value: prestacoes.arrayParcelas[i].statusCNAB
+            });
 
             // var lookupIndice = search.lookupFields({type: 'customrecord_rsc_correction_unit',
             //     id: prestacoes.arrayParcelas[i].indice,
